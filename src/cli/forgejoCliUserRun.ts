@@ -20,7 +20,7 @@ import { forgejoUserGpgVerificationTokenGet } from "../users/gpgKeys/forgejoUser
 import { forgejoUserOrganizationsList } from "../users/organizations/forgejoUserOrganizationsList.js"
 import { forgejoUserProfileEdit } from "../users/forgejoUserProfileEdit.js"
 import { forgejoUserRepositoriesList } from "../users/repositories/forgejoUserRepositoriesList.js"
-import { forgejoUserSearch } from "../users/forgejoUserSearch.js"
+import { forgejoUserSearchPage } from "../users/forgejoUserSearchPage.js"
 import { forgejoUserSshKeyDelete } from "../users/sshKeys/forgejoUserSshKeyDelete.js"
 import { forgejoUserSshKeyGet } from "../users/sshKeys/forgejoUserSshKeyGet.js"
 import { forgejoUserSshKeyUpload } from "../users/sshKeys/forgejoUserSshKeyUpload.js"
@@ -37,6 +37,8 @@ import { forgejoCliProcessExecute } from "./forgejoCliProcessExecute.js"
 import type { ForgejoCliRunOptions } from "./forgejoCliRunOptions.js"
 import { forgejoCliResourceOutput } from "./forgejoCliResourceOutput.js"
 import { forgejoCliTextRead } from "./forgejoCliTextRead.js"
+import type { ForgejoPagination } from "../http/forgejoPaginationParse.js"
+import type { ForgejoUser } from "../users/forgejoUserSchema.js"
 
 type ForgejoCliUserInvocation = Extract<ForgejoCliInvocation, { kind: `user-${string}` }>
 type ForgejoCliUserRunOptions = ForgejoCliRunOptions & { env: Record<string, string | undefined> }
@@ -48,6 +50,51 @@ function forgejoCliUserOutput(value: unknown, invocation: ForgejoCliUserInvocati
     verbose: "verbose" in invocation && invocation.verbose === true,
     outputWrite: options.outputWrite,
   })
+}
+
+function forgejoCliUserSearchWrite(output: string, options: ForgejoCliUserRunOptions): ForgejoResult<null> {
+  if (options.outputWrite) return options.outputWrite(output)
+  try {
+    process.stdout.write(output)
+    return createResult(null)
+  } catch {
+    return createResultError("forgejoCliUserRun", "Unable to write command output")
+  }
+}
+
+function forgejoCliUserSearchName(user: ForgejoUser): string {
+  const name = forgejoCliUserName(user as Record<string, unknown>)
+  if (name) return name
+  if (typeof user.full_name === "string" && user.full_name.length > 0) return user.full_name
+  if (typeof user.id === "number") return String(user.id)
+  return JSON.stringify(user)
+}
+
+function forgejoCliUserSearchHuman(
+  users: ForgejoUser[],
+  pagination: ForgejoPagination | undefined,
+  page: number,
+  limit: number,
+): string | undefined {
+  const totalCount = pagination?.totalCount
+  if (totalCount === undefined) return undefined
+  const first = (page - 1) * limit + 1
+  const outOfRange = totalCount === 0 || first > totalCount
+  const range = users.length === 0 || outOfRange ? "0" : `${first}-${Math.min(totalCount, first + users.length - 1)}`
+  const label = totalCount === 1 ? "user" : "users"
+  const names = users.map(forgejoCliUserSearchName).join("\n")
+  return `Showing ${range} of ${totalCount} ${label}\n${names}${names.length > 0 ? "\n" : ""}`
+}
+
+function forgejoCliUserSearchOutput(
+  pageResult: { users: ForgejoUser[]; pagination?: ForgejoPagination },
+  invocation: Extract<ForgejoCliUserInvocation, { kind: "user-search" }>,
+  options: ForgejoCliUserRunOptions,
+) {
+  if (invocation.json) return forgejoCliUserOutput(pageResult.users, invocation, options)
+  const human = forgejoCliUserSearchHuman(pageResult.users, pageResult.pagination, invocation.page, 20)
+  if (human !== undefined) return forgejoCliUserSearchWrite(human, options)
+  return forgejoCliUserOutput(pageResult.users, invocation, options)
 }
 
 async function forgejoCliUserConfirm(
@@ -307,9 +354,9 @@ async function forgejoCliUserRun(invocation: ForgejoCliUserInvocation, options: 
   if (!host.success) return host
   const transport = host.data.client.transport
   if (invocation.kind === "user-search") {
-    const users = await forgejoUserSearch(transport, { query: invocation.query, page: invocation.page, limit: 20 })
+    const users = await forgejoUserSearchPage(transport, { query: invocation.query, page: invocation.page, limit: 20 })
     if (!users.success) return createResultError("forgejoCliUserRun", users.errorMessage)
-    return forgejoCliUserOutput(users.data, invocation, options)
+    return forgejoCliUserSearchOutput(users.data, invocation, options)
   }
   if (invocation.kind === "user-view" || invocation.kind === "user-browse") {
     const userTarget = invocation.user ?? environmentDefaults.user

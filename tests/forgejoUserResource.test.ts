@@ -17,6 +17,7 @@ import {
   forgejoUserProfileEdit,
   forgejoUserRepositoriesList,
   forgejoUserSearch,
+  forgejoUserSearchPage,
   forgejoUserSshKeyGet,
   forgejoUserSshKeyUpload,
   forgejoUserSshKeysList,
@@ -124,4 +125,66 @@ test("user APIs reject invalid inputs before using transport", async () => {
   const result = await forgejoUserSshKeyGet(transport.data, 0)
   expect(result.success).toBe(false)
   expect(requests).toBe(0)
+})
+
+test("user search forwards the Forgejo page and preserves response pagination metadata", async () => {
+  const requests: URL[] = []
+  const pageUsers = [user, { ...user, id: 2, login: "bob", username: "bob" }]
+  const transport = forgejoRestTransportCreate({
+    baseUrl: "https://forgejo.example.test",
+    fetch: async (input) => {
+      const url = new URL(String(input))
+      requests.push(url)
+      return new Response(JSON.stringify({ ok: true, data: pageUsers }), {
+        status: 200,
+        headers: {
+          link: '<https://forgejo.example.test/api/v1/users/search?q=ali&page=3&limit=20>; rel="next"',
+          "x-total-count": "41",
+        },
+      })
+    },
+  })
+  expect(transport.success).toBe(true)
+  if (!transport.success) return
+
+  const page = await forgejoUserSearchPage(transport.data, { query: "ali", page: 2, limit: 20 })
+  expect(page).toEqual({
+    success: true,
+    data: {
+      users: pageUsers,
+      pagination: {
+        next: "https://forgejo.example.test/api/v1/users/search?q=ali&page=3&limit=20",
+        totalCount: 41,
+      },
+    },
+  })
+  expect(requests[0]?.searchParams.get("q")).toBe("ali")
+  expect(requests[0]?.searchParams.get("page")).toBe("2")
+  expect(requests[0]?.searchParams.get("limit")).toBe("20")
+
+  const legacy = await forgejoUserSearch(transport.data, "ali")
+  expect(legacy.success && legacy.data).toEqual(pageUsers)
+  expect(requests[1]?.searchParams.get("page")).toBe("1")
+  expect(requests[1]?.searchParams.get("limit")).toBe("20")
+})
+
+test("user search keeps an out-of-range Forgejo page as a successful empty page", async () => {
+  let requestedPage = ""
+  const transport = forgejoRestTransportCreate({
+    baseUrl: "https://forgejo.example.test",
+    fetch: async (input) => {
+      const url = new URL(String(input))
+      requestedPage = url.searchParams.get("page") ?? ""
+      return new Response(JSON.stringify({ ok: true, data: [] }), {
+        status: 200,
+        headers: { "x-total-count": "41" },
+      })
+    },
+  })
+  expect(transport.success).toBe(true)
+  if (!transport.success) return
+
+  const result = await forgejoUserSearchPage(transport.data, { query: "ali", page: 4, limit: 20 })
+  expect(result).toEqual({ success: true, data: { users: [], pagination: { totalCount: 41 } } })
+  expect(requestedPage).toBe("4")
 })

@@ -590,6 +590,7 @@ export {
 export { forgejoUserReferenceParse } from "./users/forgejoUserReferenceParse.js"
 export { forgejoUserSchema, type ForgejoUser } from "./users/forgejoUserSchema.js"
 export { forgejoUserSearch } from "./users/forgejoUserSearch.js"
+export { forgejoUserSearchPage } from "./users/forgejoUserSearchPage.js"
 export {
   forgejoUserSearchOptionsSchema,
   type ForgejoUserSearchOptions,

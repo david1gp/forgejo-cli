@@ -184,6 +184,46 @@ test("does not submit an empty profile value without --unset", async () => {
   expect(JSON.parse(captureOutput.output.join(""))).toMatchObject({ changed: false })
 })
 
+test("reports user search ranges from Forgejo totals and preserves out-of-range pages", async () => {
+  const requests: string[] = []
+  const output: string[] = []
+  const fetch: ForgejoFetch = async (input) => {
+    const url = new URL(String(input))
+    requests.push(url.toString())
+    const page = url.searchParams.get("page")
+    const data = page === "4" ? [] : [{ login: "alice" }, { login: "bob" }]
+    return new Response(JSON.stringify({ ok: true, data }), {
+      status: 200,
+      headers: { "x-total-count": "41" },
+    })
+  }
+  const options = {
+    env,
+    fetch,
+    outputWrite: (value: string) => {
+      output.push(value)
+      return createResult(null)
+    },
+  }
+
+  const page = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "user", "search", "ali", "--page", "2"],
+    options,
+  )
+  const outOfRange = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "user", "search", "ali", "--page", "4"],
+    options,
+  )
+
+  expect(page.success).toBe(true)
+  expect(outOfRange.success).toBe(true)
+  expect(requests).toEqual([
+    "https://forgejo.example.test/api/v1/users/search?q=ali&page=2&limit=20",
+    "https://forgejo.example.test/api/v1/users/search?q=ali&page=4&limit=20",
+  ])
+  expect(output).toEqual(["Showing 21-22 of 41 users\nalice\nbob\n", "Showing 0 of 41 users\n"])
+})
+
 test("uploads an SSH key through an injected filesystem and requires safe title confirmation", async () => {
   const requests: Request[] = []
   const captureOutput = capture()
