@@ -80,6 +80,35 @@ PKCE. The OAuth client ID is resolved in this order: `--client-id`, `FORGEJO_OAU
 the built-in public IDs for supported hosts. Use `fj auth login --token TOKEN` for non-interactive automation;
 tokens are never printed.
 
+## Environment defaults
+
+The CLI accepts shell-configurable defaults for common repository and identity inputs:
+
+- `FJ_HOST` is the primary API host; `FJ_FALLBACK_HOST` is used when it is unset or blank.
+- `FJ_SSH_BASE` is an SSH URL prefix, such as `ssh://git@ssh.git.contentoren.de:2222`, used only when constructing
+  SSH repository URLs.
+- `FJ_USER` is the default user or expected authenticated identity; `FJ_ORG` is the default repository owner. They are
+  separate defaults and are not interchangeable.
+- `FJ_REMOTE` is the preferred named Git remote when `--remote` is absent.
+
+For each applicable value, precedence is explicit CLI input, environment default, existing Git/config discovery, then
+the built-in fallback. For hosts, `--host` wins, then `FJ_HOST`, the existing `FORGEJO_BASE_URL`, `FORGEJO_URL`, and
+`FORGEJO_HOST` aliases, and finally `FJ_FALLBACK_HOST`. Blank environment values are ignored.
+
+If no explicit repository or usable Git remote identifies a repository, the CLI falls back to `basename(cwd)` as the
+repository name.
+
+For the contentoren defaults, a shell profile can use:
+
+```sh
+export FJ_HOST="git.contentoren.de"
+export FJ_FALLBACK_HOST="https://git.contentoren.de/"
+export FJ_SSH_BASE="ssh://git@ssh.git.contentoren.de:2222"
+export FJ_USER="david"
+export FJ_ORG="contentoren"
+export FJ_REMOTE="origin"
+```
+
 ## Planned Forgejo workflows
 
 `fj` and the library are being designed for automation against self-hosted Forgejo instances, including:
