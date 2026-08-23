@@ -21,6 +21,7 @@ export async function forgejoOrganizationTeamEdit(
   const parsed = a.safeParse(forgejoOrganizationTeamEditOptionsSchema, optionsInput)
   if (!parsed.success) return createResultError(op, a.summarize(parsed.issues))
   const options: ForgejoOrganizationTeamEditOptions = parsed.output
+  const unitsMap = forgejoOrganizationTeamUnitsMap(options.readPermissions, options.writePermissions)
   const response = await transport.request({
     path: `/api/v1/teams/${team.data}`,
     method: "PATCH",
@@ -30,9 +31,7 @@ export async function forgejoOrganizationTeamEdit(
       ...(options.canCreateRepos === undefined ? {} : { can_create_org_repo: options.canCreateRepos }),
       ...(options.includeAllRepos === undefined ? {} : { includes_all_repositories: options.includeAllRepos }),
       ...(options.admin === true ? { permission: "admin" } : {}),
-      ...(options.readPermissions === undefined && options.writePermissions === undefined
-        ? {}
-        : { units_map: forgejoOrganizationTeamUnitsMap(options.readPermissions, options.writePermissions) }),
+      ...(Object.keys(unitsMap).length === 0 ? {} : { units_map: unitsMap }),
     },
   })
   if (!response.success) return response
@@ -56,7 +55,7 @@ function forgejoOrganizationTeamUnitsMap(readPermissions?: string, writePermissi
   ]
   const units: Record<string, string> = {}
   const add = (permissions: string | undefined, permission: string) => {
-    if (!permissions) return
+    if (!permissions?.trim()) return
     const names = permissions.trim() === "all" ? all : permissions.split(",")
     for (const name of names) units[`repo.${name.replace(/^repo\./, "")}`] = permission
   }

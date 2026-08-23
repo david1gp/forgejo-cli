@@ -10,6 +10,7 @@ import {
   forgejoOrganizationLabelsList,
   forgejoOrganizationList,
   forgejoOrganizationMemberVisibilityGet,
+  forgejoOrganizationMemberVisibilitySet,
   forgejoOrganizationMembersList,
   forgejoOrganizationRepositoriesList,
   forgejoOrganizationRepositoryCreate,
@@ -78,6 +79,16 @@ test("organization APIs cover lifecycle, teams, labels, members, and repositorie
     success: true,
     data: "public",
   })
+  expect(
+    await forgejoOrganizationMemberVisibilitySet(transport.data, "acme", "alice", { visibility: "public" }),
+  ).toMatchObject({
+    success: true,
+  })
+  expect(
+    await forgejoOrganizationMemberVisibilitySet(transport.data, "acme", "alice", { visibility: "private" }),
+  ).toMatchObject({
+    success: true,
+  })
   const teams = await forgejoOrganizationTeamsList(transport.data, "acme")
   expect(teams.success && teams.data[0]?.id).toBe(7)
   const currentTeam = await forgejoOrganizationTeamGet(transport.data, "acme", 7)
@@ -108,4 +119,38 @@ test("organization APIs cover lifecycle, teams, labels, members, and repositorie
   expect(calls.find((call) => call.path === "/api/v1/teams/7" && call.method === "PATCH")?.body).not.toHaveProperty(
     "permission",
   )
+  expect(
+    calls.filter((call) => call.path === "/api/v1/orgs/acme/public_members/alice").map((call) => call.method),
+  ).toEqual(["GET", "PUT", "DELETE"])
+})
+
+test("team edit omits empty unit permissions and sends valid unit permissions", async () => {
+  const bodies: unknown[] = []
+  const transport = forgejoRestTransportCreate({
+    baseUrl: "https://forgejo.example.test",
+    fetch: async (_input, init) => {
+      if (init?.method === "PATCH") bodies.push(JSON.parse(String(init.body)))
+      return new Response(JSON.stringify(team), { status: 200 })
+    },
+  })
+  expect(transport.success).toBe(true)
+  if (!transport.success) return
+
+  await forgejoOrganizationTeamEdit(transport.data, "acme", 7, { readPermissions: "" })
+  await forgejoOrganizationTeamEdit(transport.data, "acme", 7, { writePermissions: "   " })
+  await forgejoOrganizationTeamEdit(transport.data, "acme", 7, {
+    readPermissions: "issues",
+    writePermissions: "repo.pulls",
+  })
+
+  expect(bodies).toEqual([
+    {},
+    {},
+    {
+      units_map: {
+        "repo.issues": "read",
+        "repo.pulls": "write",
+      },
+    },
+  ])
 })
