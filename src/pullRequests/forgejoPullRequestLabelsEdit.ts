@@ -1,6 +1,6 @@
 import type { ForgejoResult } from "../errors/forgejoResult.js"
 import type { ForgejoRestTransport } from "../http/forgejoRestTransportCreate.js"
-import { forgejoIssueLabelsEdit } from "../issues/forgejoIssueLabelsEdit.js"
+import { forgejoIssueLabelsEdit } from "../issues/labels/forgejoIssueLabelsEdit.js"
 import { forgejoPullRequestIssueReferenceResolve } from "./forgejoPullRequestIssueReferenceResolve.js"
 
 export async function forgejoPullRequestLabelsEdit(

@@ -1,5 +1,5 @@
 import * as a from "valibot"
-import { forgejoReleaseAssetSchema } from "./forgejoReleaseAssetSchema.js"
+import { forgejoReleaseAssetSchema } from "./assets/forgejoReleaseAssetSchema.js"
 
 const forgejoReleaseSchema = a.looseObject({
   id: a.optional(a.nullable(a.number())),

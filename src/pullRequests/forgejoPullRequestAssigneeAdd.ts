@@ -1,6 +1,6 @@
 import type { ForgejoResult } from "../errors/forgejoResult.js"
 import type { ForgejoRestTransport } from "../http/forgejoRestTransportCreate.js"
-import { forgejoIssueAssigneeAdd } from "../issues/forgejoIssueAssigneeAdd.js"
+import { forgejoIssueAssigneeAdd } from "../issues/assignees/forgejoIssueAssigneeAdd.js"
 import { forgejoPullRequestIssueReferenceResolve } from "./forgejoPullRequestIssueReferenceResolve.js"
 import { forgejoPullRequestResponseParse } from "./forgejoPullRequestResponseParse.js"
 import type { ForgejoPullRequest } from "./forgejoPullRequestSchema.js"

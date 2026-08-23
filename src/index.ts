@@ -102,54 +102,54 @@ export { forgejoBaseUrlParse } from "./hosts/forgejoBaseUrlParse.js"
 export { type ForgejoBaseUrl, forgejoBaseUrlSchema } from "./hosts/forgejoBaseUrlSchema.js"
 export { forgejoHostParse } from "./hosts/forgejoHostParse.js"
 export { type ForgejoHost, forgejoHostSchema } from "./hosts/forgejoHostSchema.js"
-export { forgejoIssueAssigneeAdd } from "./issues/forgejoIssueAssigneeAdd.js"
-export { forgejoIssueAssigneeRemove } from "./issues/forgejoIssueAssigneeRemove.js"
-export { forgejoIssueAssigneesGet } from "./issues/forgejoIssueAssigneesGet.js"
-export { forgejoIssueAssigneesList } from "./issues/forgejoIssueAssigneesList.js"
+export { forgejoIssueAssigneeAdd } from "./issues/assignees/forgejoIssueAssigneeAdd.js"
+export { forgejoIssueAssigneeRemove } from "./issues/assignees/forgejoIssueAssigneeRemove.js"
+export { forgejoIssueAssigneesGet } from "./issues/assignees/forgejoIssueAssigneesGet.js"
+export { forgejoIssueAssigneesList } from "./issues/assignees/forgejoIssueAssigneesList.js"
 export {
   forgejoIssueAssigneesOptionsSchema,
   type ForgejoIssueAssigneesOptions,
-} from "./issues/forgejoIssueAssigneesOptionsSchema.js"
-export { forgejoIssueBlockedByAdd } from "./issues/forgejoIssueBlockedByAdd.js"
-export { forgejoIssueBlockedByGet } from "./issues/forgejoIssueBlockedByGet.js"
-export { forgejoIssueBlockedByList } from "./issues/forgejoIssueBlockedByList.js"
-export { forgejoIssueBlockedByRemove } from "./issues/forgejoIssueBlockedByRemove.js"
+} from "./issues/assignees/forgejoIssueAssigneesOptionsSchema.js"
+export { forgejoIssueBlockedByAdd } from "./issues/dependencies/forgejoIssueBlockedByAdd.js"
+export { forgejoIssueBlockedByGet } from "./issues/dependencies/forgejoIssueBlockedByGet.js"
+export { forgejoIssueBlockedByList } from "./issues/dependencies/forgejoIssueBlockedByList.js"
+export { forgejoIssueBlockedByRemove } from "./issues/dependencies/forgejoIssueBlockedByRemove.js"
 export { forgejoIssueBodyEdit } from "./issues/forgejoIssueBodyEdit.js"
-export { forgejoIssueCommentCreate } from "./issues/forgejoIssueCommentCreate.js"
-export { forgejoIssueCommentEdit } from "./issues/forgejoIssueCommentEdit.js"
-export { forgejoIssueCommentGet } from "./issues/forgejoIssueCommentGet.js"
+export { forgejoIssueCommentCreate } from "./issues/comments/forgejoIssueCommentCreate.js"
+export { forgejoIssueCommentEdit } from "./issues/comments/forgejoIssueCommentEdit.js"
+export { forgejoIssueCommentGet } from "./issues/comments/forgejoIssueCommentGet.js"
 export {
   forgejoIssueCommentCreateOptionsSchema,
   type ForgejoIssueCommentCreateOptions,
-} from "./issues/forgejoIssueCommentCreateOptionsSchema.js"
-export { forgejoIssueCommentResponseParse } from "./issues/forgejoIssueCommentResponseParse.js"
-export { forgejoIssueCommentSchema, type ForgejoIssueComment } from "./issues/forgejoIssueCommentSchema.js"
-export { forgejoIssueCommentsGet } from "./issues/forgejoIssueCommentsGet.js"
-export { forgejoIssueCommentsList } from "./issues/forgejoIssueCommentsList.js"
+} from "./issues/comments/forgejoIssueCommentCreateOptionsSchema.js"
+export { forgejoIssueCommentResponseParse } from "./issues/comments/forgejoIssueCommentResponseParse.js"
+export { forgejoIssueCommentSchema, type ForgejoIssueComment } from "./issues/comments/forgejoIssueCommentSchema.js"
+export { forgejoIssueCommentsGet } from "./issues/comments/forgejoIssueCommentsGet.js"
+export { forgejoIssueCommentsList } from "./issues/comments/forgejoIssueCommentsList.js"
 export {
   forgejoIssueCommentsListOptionsSchema,
   type ForgejoIssueCommentsListOptions,
-} from "./issues/forgejoIssueCommentsListOptionsSchema.js"
+} from "./issues/comments/forgejoIssueCommentsListOptionsSchema.js"
 export { forgejoIssueCreate } from "./issues/forgejoIssueCreate.js"
 export {
   forgejoIssueCreateOptionsSchema,
   type ForgejoIssueCreateOptions,
 } from "./issues/forgejoIssueCreateOptionsSchema.js"
-export { forgejoIssueDependenciesGet } from "./issues/forgejoIssueDependenciesGet.js"
-export { forgejoIssueDependencyAdd } from "./issues/forgejoIssueDependencyAdd.js"
-export { forgejoIssueDependencyAdd as forgejoIssueDependenciesAdd } from "./issues/forgejoIssueDependencyAdd.js"
-export { forgejoIssueDependencyList } from "./issues/forgejoIssueDependencyList.js"
-export { forgejoIssueDependencyRemove } from "./issues/forgejoIssueDependencyRemove.js"
-export { forgejoIssueDependencyRemove as forgejoIssueDependenciesRemove } from "./issues/forgejoIssueDependencyRemove.js"
-export { forgejoIssueDependencyList as forgejoIssueDependenciesList } from "./issues/forgejoIssueDependencyList.js"
+export { forgejoIssueDependenciesGet } from "./issues/dependencies/forgejoIssueDependenciesGet.js"
+export { forgejoIssueDependencyAdd } from "./issues/dependencies/forgejoIssueDependencyAdd.js"
+export { forgejoIssueDependencyAdd as forgejoIssueDependenciesAdd } from "./issues/dependencies/forgejoIssueDependencyAdd.js"
+export { forgejoIssueDependencyList } from "./issues/dependencies/forgejoIssueDependencyList.js"
+export { forgejoIssueDependencyRemove } from "./issues/dependencies/forgejoIssueDependencyRemove.js"
+export { forgejoIssueDependencyRemove as forgejoIssueDependenciesRemove } from "./issues/dependencies/forgejoIssueDependencyRemove.js"
+export { forgejoIssueDependencyList as forgejoIssueDependenciesList } from "./issues/dependencies/forgejoIssueDependencyList.js"
 export { forgejoIssueEdit } from "./issues/forgejoIssueEdit.js"
 export { forgejoIssueEditOptionsSchema, type ForgejoIssueEditOptions } from "./issues/forgejoIssueEditOptionsSchema.js"
 export { forgejoIssueGet } from "./issues/forgejoIssueGet.js"
-export { forgejoIssueLabelsEdit } from "./issues/forgejoIssueLabelsEdit.js"
+export { forgejoIssueLabelsEdit } from "./issues/labels/forgejoIssueLabelsEdit.js"
 export {
   forgejoIssueLabelsEditOptionsSchema,
   type ForgejoIssueLabelsEditOptions,
-} from "./issues/forgejoIssueLabelsEditOptionsSchema.js"
+} from "./issues/labels/forgejoIssueLabelsEditOptionsSchema.js"
 export { forgejoIssueList } from "./issues/forgejoIssueList.js"
 export { forgejoIssueListOptionsSchema, type ForgejoIssueListOptions } from "./issues/forgejoIssueListOptionsSchema.js"
 export { forgejoIssueReferenceParse } from "./issues/forgejoIssueReferenceParse.js"
@@ -158,33 +158,33 @@ export { forgejoIssueSchema, type ForgejoIssue } from "./issues/forgejoIssueSche
 export { forgejoIssueSearch } from "./issues/forgejoIssueSearch.js"
 export { forgejoIssueStateEdit } from "./issues/forgejoIssueStateEdit.js"
 export { forgejoIssueTargetParse } from "./issues/forgejoIssueTargetParse.js"
-export { forgejoIssueTemplateSchema, type ForgejoIssueTemplate } from "./issues/forgejoIssueTemplateSchema.js"
-export { forgejoIssueTemplatesGet } from "./issues/forgejoIssueTemplatesGet.js"
+export { forgejoIssueTemplateSchema, type ForgejoIssueTemplate } from "./issues/templates/forgejoIssueTemplateSchema.js"
+export { forgejoIssueTemplatesGet } from "./issues/templates/forgejoIssueTemplatesGet.js"
 export { forgejoIssueTitleEdit } from "./issues/forgejoIssueTitleEdit.js"
 export { forgejoIssueUserSchema, type ForgejoIssueUser } from "./issues/forgejoIssueUserSchema.js"
 export { forgejoIssueView } from "./issues/forgejoIssueView.js"
 export { forgejoIssueIdentifierParse } from "./issues/forgejoIssueIdentifierParse.js"
 export { type ForgejoIssueIdentifier, forgejoIssueIdentifierSchema } from "./issues/forgejoIssueIdentifierSchema.js"
-export { forgejoReleaseAssetDelete } from "./releases/forgejoReleaseAssetDelete.js"
-export { forgejoReleaseAssetDownload } from "./releases/forgejoReleaseAssetDownload.js"
-export type { ForgejoReleaseAssetRawData } from "./releases/forgejoReleaseAssetDownload.js"
-export { forgejoReleaseAssetGet } from "./releases/forgejoReleaseAssetGet.js"
-export { forgejoReleaseAssetReferenceParse } from "./releases/forgejoReleaseAssetReferenceParse.js"
-export { forgejoReleaseAssetResponseParse } from "./releases/forgejoReleaseAssetResponseParse.js"
+export { forgejoReleaseAssetDelete } from "./releases/assets/forgejoReleaseAssetDelete.js"
+export { forgejoReleaseAssetDownload } from "./releases/assets/forgejoReleaseAssetDownload.js"
+export type { ForgejoReleaseAssetRawData } from "./releases/assets/forgejoReleaseAssetDownload.js"
+export { forgejoReleaseAssetGet } from "./releases/assets/forgejoReleaseAssetGet.js"
+export { forgejoReleaseAssetReferenceParse } from "./releases/assets/forgejoReleaseAssetReferenceParse.js"
+export { forgejoReleaseAssetResponseParse } from "./releases/assets/forgejoReleaseAssetResponseParse.js"
 export {
   forgejoReleaseAssetReferenceSchema,
   type ForgejoReleaseAssetReference,
-} from "./releases/forgejoReleaseAssetReferenceSchema.js"
+} from "./releases/assets/forgejoReleaseAssetReferenceSchema.js"
 export {
   forgejoReleaseAssetSchema,
   type ForgejoReleaseAsset,
-} from "./releases/forgejoReleaseAssetSchema.js"
-export { forgejoReleaseAssetUpload } from "./releases/forgejoReleaseAssetUpload.js"
+} from "./releases/assets/forgejoReleaseAssetSchema.js"
+export { forgejoReleaseAssetUpload } from "./releases/assets/forgejoReleaseAssetUpload.js"
 export {
   forgejoReleaseAssetUploadOptionsSchema,
   type ForgejoReleaseAssetUploadOptions,
-} from "./releases/forgejoReleaseAssetUploadOptionsSchema.js"
-export type { ForgejoReleaseAssetData } from "./releases/forgejoReleaseAssetData.js"
+} from "./releases/assets/forgejoReleaseAssetUploadOptionsSchema.js"
+export type { ForgejoReleaseAssetData } from "./releases/assets/forgejoReleaseAssetData.js"
 export { forgejoReleaseCreate } from "./releases/forgejoReleaseCreate.js"
 export {
   forgejoReleaseCreateOptionsSchema,
@@ -235,29 +235,29 @@ export {
 } from "./pullRequests/forgejoPullRequestNumberSchema.js"
 export { forgejoPullRequestAssigneeAdd } from "./pullRequests/forgejoPullRequestAssigneeAdd.js"
 export { forgejoPullRequestAssigneeRemove } from "./pullRequests/forgejoPullRequestAssigneeRemove.js"
-export { forgejoPullRequestBlockedByAdd } from "./pullRequests/forgejoPullRequestBlockedByAdd.js"
-export { forgejoPullRequestBlockedByGet } from "./pullRequests/forgejoPullRequestBlockedByGet.js"
-export { forgejoPullRequestBlockedByList } from "./pullRequests/forgejoPullRequestBlockedByList.js"
-export { forgejoPullRequestBlockedByRemove } from "./pullRequests/forgejoPullRequestBlockedByRemove.js"
+export { forgejoPullRequestBlockedByAdd } from "./pullRequests/dependencies/forgejoPullRequestBlockedByAdd.js"
+export { forgejoPullRequestBlockedByGet } from "./pullRequests/dependencies/forgejoPullRequestBlockedByGet.js"
+export { forgejoPullRequestBlockedByList } from "./pullRequests/dependencies/forgejoPullRequestBlockedByList.js"
+export { forgejoPullRequestBlockedByRemove } from "./pullRequests/dependencies/forgejoPullRequestBlockedByRemove.js"
 export { forgejoPullRequestBodyEdit } from "./pullRequests/forgejoPullRequestBodyEdit.js"
 export { forgejoPullRequestClose } from "./pullRequests/forgejoPullRequestClose.js"
-export { forgejoPullRequestCommentCreate } from "./pullRequests/forgejoPullRequestCommentCreate.js"
-export { forgejoPullRequestCommentEdit } from "./pullRequests/forgejoPullRequestCommentEdit.js"
-export { forgejoPullRequestCommentGet } from "./pullRequests/forgejoPullRequestCommentGet.js"
-export { forgejoPullRequestCommentsGet } from "./pullRequests/forgejoPullRequestCommentsGet.js"
-export { forgejoPullRequestCommentsList } from "./pullRequests/forgejoPullRequestCommentsList.js"
+export { forgejoPullRequestCommentCreate } from "./pullRequests/comments/forgejoPullRequestCommentCreate.js"
+export { forgejoPullRequestCommentEdit } from "./pullRequests/comments/forgejoPullRequestCommentEdit.js"
+export { forgejoPullRequestCommentGet } from "./pullRequests/comments/forgejoPullRequestCommentGet.js"
+export { forgejoPullRequestCommentsGet } from "./pullRequests/comments/forgejoPullRequestCommentsGet.js"
+export { forgejoPullRequestCommentsList } from "./pullRequests/comments/forgejoPullRequestCommentsList.js"
 export { forgejoPullRequestCreate } from "./pullRequests/forgejoPullRequestCreate.js"
 export {
   forgejoPullRequestCreateOptionsSchema,
   type ForgejoPullRequestCreateOptions,
 } from "./pullRequests/forgejoPullRequestCreateOptionsSchema.js"
-export { forgejoPullRequestDependenciesGet } from "./pullRequests/forgejoPullRequestDependenciesGet.js"
-export { forgejoPullRequestDependencyAdd } from "./pullRequests/forgejoPullRequestDependencyAdd.js"
-export { forgejoPullRequestDependencyList } from "./pullRequests/forgejoPullRequestDependencyList.js"
-export { forgejoPullRequestDependencyRemove } from "./pullRequests/forgejoPullRequestDependencyRemove.js"
-export { forgejoPullRequestDependencyAdd as forgejoPullRequestDependenciesAdd } from "./pullRequests/forgejoPullRequestDependencyAdd.js"
-export { forgejoPullRequestDependencyList as forgejoPullRequestDependenciesList } from "./pullRequests/forgejoPullRequestDependencyList.js"
-export { forgejoPullRequestDependencyRemove as forgejoPullRequestDependenciesRemove } from "./pullRequests/forgejoPullRequestDependencyRemove.js"
+export { forgejoPullRequestDependenciesGet } from "./pullRequests/dependencies/forgejoPullRequestDependenciesGet.js"
+export { forgejoPullRequestDependencyAdd } from "./pullRequests/dependencies/forgejoPullRequestDependencyAdd.js"
+export { forgejoPullRequestDependencyList } from "./pullRequests/dependencies/forgejoPullRequestDependencyList.js"
+export { forgejoPullRequestDependencyRemove } from "./pullRequests/dependencies/forgejoPullRequestDependencyRemove.js"
+export { forgejoPullRequestDependencyAdd as forgejoPullRequestDependenciesAdd } from "./pullRequests/dependencies/forgejoPullRequestDependencyAdd.js"
+export { forgejoPullRequestDependencyList as forgejoPullRequestDependenciesList } from "./pullRequests/dependencies/forgejoPullRequestDependencyList.js"
+export { forgejoPullRequestDependencyRemove as forgejoPullRequestDependenciesRemove } from "./pullRequests/dependencies/forgejoPullRequestDependencyRemove.js"
 export { forgejoPullRequestEdit } from "./pullRequests/forgejoPullRequestEdit.js"
 export {
   forgejoPullRequestEditOptionsSchema,
@@ -267,12 +267,12 @@ export { forgejoPullRequestGet } from "./pullRequests/forgejoPullRequestGet.js"
 export {
   forgejoPullRequestCommitSchema,
   type ForgejoPullRequestCommit,
-} from "./pullRequests/forgejoPullRequestCommitSchema.js"
-export { forgejoPullRequestCommitsList } from "./pullRequests/forgejoPullRequestCommitsList.js"
+} from "./pullRequests/commits/forgejoPullRequestCommitSchema.js"
+export { forgejoPullRequestCommitsList } from "./pullRequests/commits/forgejoPullRequestCommitsList.js"
 export {
   forgejoPullRequestCommitsListOptionsSchema,
   type ForgejoPullRequestCommitsListOptions,
-} from "./pullRequests/forgejoPullRequestCommitsListOptionsSchema.js"
+} from "./pullRequests/commits/forgejoPullRequestCommitsListOptionsSchema.js"
 export { forgejoPullRequestDiffGet } from "./pullRequests/forgejoPullRequestDiffGet.js"
 export {
   forgejoPullRequestDiffOptionsSchema,
@@ -281,12 +281,12 @@ export {
 export {
   forgejoPullRequestFileSchema,
   type ForgejoPullRequestFile,
-} from "./pullRequests/forgejoPullRequestFileSchema.js"
-export { forgejoPullRequestFilesList } from "./pullRequests/forgejoPullRequestFilesList.js"
+} from "./pullRequests/files/forgejoPullRequestFileSchema.js"
+export { forgejoPullRequestFilesList } from "./pullRequests/files/forgejoPullRequestFilesList.js"
 export {
   forgejoPullRequestFilesListOptionsSchema,
   type ForgejoPullRequestFilesListOptions,
-} from "./pullRequests/forgejoPullRequestFilesListOptionsSchema.js"
+} from "./pullRequests/files/forgejoPullRequestFilesListOptionsSchema.js"
 export { forgejoPullRequestIssueReferenceResolve } from "./pullRequests/forgejoPullRequestIssueReferenceResolve.js"
 export { forgejoPullRequestLabelsEdit } from "./pullRequests/forgejoPullRequestLabelsEdit.js"
 export { forgejoPullRequestList } from "./pullRequests/forgejoPullRequestList.js"
@@ -302,22 +302,22 @@ export {
 export { forgejoPullRequestPathCreate } from "./pullRequests/forgejoPullRequestPathCreate.js"
 export { forgejoPullRequestReferenceResolve } from "./pullRequests/forgejoPullRequestReferenceResolve.js"
 export { forgejoPullRequestResponseParse } from "./pullRequests/forgejoPullRequestResponseParse.js"
-export { forgejoPullRequestReviewCommentsList } from "./pullRequests/forgejoPullRequestReviewCommentsList.js"
-export { forgejoPullRequestReviewsList } from "./pullRequests/forgejoPullRequestReviewsList.js"
-export { forgejoPullRequestReviewsList as forgejoPullRequestReviewsGet } from "./pullRequests/forgejoPullRequestReviewsList.js"
-export { forgejoPullRequestReviewCommentsList as forgejoPullRequestReviewCommentsGet } from "./pullRequests/forgejoPullRequestReviewCommentsList.js"
+export { forgejoPullRequestReviewCommentsList } from "./pullRequests/reviews/forgejoPullRequestReviewCommentsList.js"
+export { forgejoPullRequestReviewsList } from "./pullRequests/reviews/forgejoPullRequestReviewsList.js"
+export { forgejoPullRequestReviewsList as forgejoPullRequestReviewsGet } from "./pullRequests/reviews/forgejoPullRequestReviewsList.js"
+export { forgejoPullRequestReviewCommentsList as forgejoPullRequestReviewCommentsGet } from "./pullRequests/reviews/forgejoPullRequestReviewCommentsList.js"
 export {
   forgejoPullRequestReviewsListOptionsSchema,
   type ForgejoPullRequestReviewsListOptions,
-} from "./pullRequests/forgejoPullRequestReviewsListOptionsSchema.js"
+} from "./pullRequests/reviews/forgejoPullRequestReviewsListOptionsSchema.js"
 export {
   forgejoPullRequestReviewCommentSchema,
   type ForgejoPullRequestReviewComment,
-} from "./pullRequests/forgejoPullRequestReviewCommentSchema.js"
+} from "./pullRequests/reviews/forgejoPullRequestReviewCommentSchema.js"
 export {
   forgejoPullRequestReviewSchema,
   type ForgejoPullRequestReview,
-} from "./pullRequests/forgejoPullRequestReviewSchema.js"
+} from "./pullRequests/reviews/forgejoPullRequestReviewSchema.js"
 export { forgejoPullRequestSearch } from "./pullRequests/forgejoPullRequestSearch.js"
 export { forgejoPullRequestStatus } from "./pullRequests/forgejoPullRequestStatus.js"
 export { forgejoPullRequestStateEdit } from "./pullRequests/forgejoPullRequestStateEdit.js"
@@ -356,12 +356,12 @@ export {
   type ForgejoRepositoryCreateOptions,
 } from "./repositories/forgejoRepositoryCreateOptionsSchema.js"
 export { forgejoRepositoryDelete } from "./repositories/forgejoRepositoryDelete.js"
-export { forgejoRepositoryAvatarDelete } from "./repositories/forgejoRepositoryAvatarDelete.js"
-export { forgejoRepositoryAvatarUpdate } from "./repositories/forgejoRepositoryAvatarUpdate.js"
+export { forgejoRepositoryAvatarDelete } from "./repositories/avatars/forgejoRepositoryAvatarDelete.js"
+export { forgejoRepositoryAvatarUpdate } from "./repositories/avatars/forgejoRepositoryAvatarUpdate.js"
 export {
   forgejoRepositoryAvatarUpdateOptionsSchema,
   type ForgejoRepositoryAvatarUpdateOptions,
-} from "./repositories/forgejoRepositoryAvatarUpdateOptionsSchema.js"
+} from "./repositories/avatars/forgejoRepositoryAvatarUpdateOptionsSchema.js"
 export { forgejoRepositoryEdit } from "./repositories/forgejoRepositoryEdit.js"
 export {
   forgejoRepositoryEditOptionsSchema,
@@ -373,28 +373,28 @@ export {
   type ForgejoRepositoryForkOptions,
 } from "./repositories/forgejoRepositoryForkOptionsSchema.js"
 export { forgejoRepositoryGet } from "./repositories/forgejoRepositoryGet.js"
-export { forgejoRepositoryLabelCreate } from "./repositories/forgejoRepositoryLabelCreate.js"
+export { forgejoRepositoryLabelCreate } from "./repositories/labels/forgejoRepositoryLabelCreate.js"
 export {
   forgejoRepositoryLabelCreateOptionsSchema,
   type ForgejoRepositoryLabelCreateOptions,
-} from "./repositories/forgejoRepositoryLabelCreateOptionsSchema.js"
-export { forgejoRepositoryLabelDelete } from "./repositories/forgejoRepositoryLabelDelete.js"
-export { forgejoRepositoryLabelEdit } from "./repositories/forgejoRepositoryLabelEdit.js"
+} from "./repositories/labels/forgejoRepositoryLabelCreateOptionsSchema.js"
+export { forgejoRepositoryLabelDelete } from "./repositories/labels/forgejoRepositoryLabelDelete.js"
+export { forgejoRepositoryLabelEdit } from "./repositories/labels/forgejoRepositoryLabelEdit.js"
 export {
   forgejoRepositoryLabelEditOptionsSchema,
   type ForgejoRepositoryLabelEditOptions,
-} from "./repositories/forgejoRepositoryLabelEditOptionsSchema.js"
-export { forgejoRepositoryLabelReferenceParse } from "./repositories/forgejoRepositoryLabelReferenceParse.js"
+} from "./repositories/labels/forgejoRepositoryLabelEditOptionsSchema.js"
+export { forgejoRepositoryLabelReferenceParse } from "./repositories/labels/forgejoRepositoryLabelReferenceParse.js"
 export {
   forgejoRepositoryLabelSchema,
   type ForgejoRepositoryLabel,
-} from "./repositories/forgejoRepositoryLabelSchema.js"
-export { forgejoRepositoryLabelResponseParse } from "./repositories/forgejoRepositoryLabelResponseParse.js"
-export { forgejoRepositoryLabelsGet } from "./repositories/forgejoRepositoryLabelsGet.js"
+} from "./repositories/labels/forgejoRepositoryLabelSchema.js"
+export { forgejoRepositoryLabelResponseParse } from "./repositories/labels/forgejoRepositoryLabelResponseParse.js"
+export { forgejoRepositoryLabelsGet } from "./repositories/labels/forgejoRepositoryLabelsGet.js"
 export {
   forgejoRepositoryLabelsListOptionsSchema,
   type ForgejoRepositoryLabelsListOptions,
-} from "./repositories/forgejoRepositoryLabelsListOptionsSchema.js"
+} from "./repositories/labels/forgejoRepositoryLabelsListOptionsSchema.js"
 export {
   forgejoRepositoryListOptionsSchema,
   type ForgejoRepositoryListOptions,
@@ -412,17 +412,17 @@ export {
   forgejoRepositorySchema,
   type ForgejoRepository,
 } from "./repositories/forgejoRepositorySchema.js"
-export { forgejoRepositoryStar } from "./repositories/forgejoRepositoryStar.js"
-export { forgejoRepositoryStarStatusGet } from "./repositories/forgejoRepositoryStarStatusGet.js"
-export { forgejoRepositoryUnstar } from "./repositories/forgejoRepositoryUnstar.js"
+export { forgejoRepositoryStar } from "./repositories/stars/forgejoRepositoryStar.js"
+export { forgejoRepositoryStarStatusGet } from "./repositories/stars/forgejoRepositoryStarStatusGet.js"
+export { forgejoRepositoryUnstar } from "./repositories/stars/forgejoRepositoryUnstar.js"
 export { forgejoRepositoryUnitsEdit } from "./repositories/forgejoRepositoryUnitsEdit.js"
 export {
   forgejoRepositoryUnitsEditOptionsSchema,
   type ForgejoRepositoryUnitsEditOptions,
 } from "./repositories/forgejoRepositoryUnitsEditOptionsSchema.js"
-export { forgejoRepositoryUnwatch } from "./repositories/forgejoRepositoryUnwatch.js"
-export { forgejoRepositoryWatch } from "./repositories/forgejoRepositoryWatch.js"
-export { forgejoRepositoryWatchStatusGet } from "./repositories/forgejoRepositoryWatchStatusGet.js"
+export { forgejoRepositoryUnwatch } from "./repositories/watching/forgejoRepositoryUnwatch.js"
+export { forgejoRepositoryWatch } from "./repositories/watching/forgejoRepositoryWatch.js"
+export { forgejoRepositoryWatchStatusGet } from "./repositories/watching/forgejoRepositoryWatchStatusGet.js"
 export { forgejoPaginationParse } from "./http/forgejoPaginationParse.js"
 export type { ForgejoPagination } from "./http/forgejoPaginationParse.js"
 export {
@@ -453,137 +453,140 @@ export {
   type ForgejoOrganizationEditOptions,
 } from "./organizations/forgejoOrganizationEditOptionsSchema.js"
 export { forgejoOrganizationGet } from "./organizations/forgejoOrganizationGet.js"
-export { forgejoOrganizationLabelCreate } from "./organizations/forgejoOrganizationLabelCreate.js"
+export { forgejoOrganizationLabelCreate } from "./organizations/labels/forgejoOrganizationLabelCreate.js"
 export {
   forgejoOrganizationLabelCreateOptionsSchema,
   type ForgejoOrganizationLabelCreateOptions,
-} from "./organizations/forgejoOrganizationLabelCreateOptionsSchema.js"
-export { forgejoOrganizationLabelDelete } from "./organizations/forgejoOrganizationLabelDelete.js"
-export { forgejoOrganizationLabelEdit } from "./organizations/forgejoOrganizationLabelEdit.js"
+} from "./organizations/labels/forgejoOrganizationLabelCreateOptionsSchema.js"
+export { forgejoOrganizationLabelDelete } from "./organizations/labels/forgejoOrganizationLabelDelete.js"
+export { forgejoOrganizationLabelEdit } from "./organizations/labels/forgejoOrganizationLabelEdit.js"
 export {
   forgejoOrganizationLabelEditOptionsSchema,
   type ForgejoOrganizationLabelEditOptions,
-} from "./organizations/forgejoOrganizationLabelEditOptionsSchema.js"
-export { forgejoOrganizationLabelIdResolve } from "./organizations/forgejoOrganizationLabelIdResolve.js"
+} from "./organizations/labels/forgejoOrganizationLabelEditOptionsSchema.js"
+export { forgejoOrganizationLabelIdResolve } from "./organizations/labels/forgejoOrganizationLabelIdResolve.js"
 export {
   forgejoOrganizationLabelSchema,
   type ForgejoOrganizationLabel,
-} from "./organizations/forgejoOrganizationLabelSchema.js"
-export { forgejoOrganizationLabelsList } from "./organizations/forgejoOrganizationLabelsList.js"
+} from "./organizations/labels/forgejoOrganizationLabelSchema.js"
+export { forgejoOrganizationLabelsList } from "./organizations/labels/forgejoOrganizationLabelsList.js"
 export {
   forgejoOrganizationLabelsListOptionsSchema,
   type ForgejoOrganizationLabelsListOptions,
-} from "./organizations/forgejoOrganizationLabelsListOptionsSchema.js"
+} from "./organizations/labels/forgejoOrganizationLabelsListOptionsSchema.js"
 export { forgejoOrganizationList } from "./organizations/forgejoOrganizationList.js"
 export {
   forgejoOrganizationListOptionsSchema,
   type ForgejoOrganizationListOptions,
 } from "./organizations/forgejoOrganizationListOptionsSchema.js"
-export { forgejoOrganizationMemberVisibilityGet } from "./organizations/forgejoOrganizationMemberVisibilityGet.js"
-export { forgejoOrganizationMemberVisibilitySet } from "./organizations/forgejoOrganizationMemberVisibilitySet.js"
+export { forgejoOrganizationMemberVisibilityGet } from "./organizations/members/forgejoOrganizationMemberVisibilityGet.js"
+export { forgejoOrganizationMemberVisibilitySet } from "./organizations/members/forgejoOrganizationMemberVisibilitySet.js"
 export {
   forgejoOrganizationMemberVisibilitySetOptionsSchema,
   type ForgejoOrganizationMemberVisibilitySetOptions,
-} from "./organizations/forgejoOrganizationMemberVisibilitySetOptionsSchema.js"
-export { forgejoOrganizationMembersList } from "./organizations/forgejoOrganizationMembersList.js"
+} from "./organizations/members/forgejoOrganizationMemberVisibilitySetOptionsSchema.js"
+export { forgejoOrganizationMembersList } from "./organizations/members/forgejoOrganizationMembersList.js"
 export {
   forgejoOrganizationMembersListOptionsSchema,
   type ForgejoOrganizationMembersListOptions,
-} from "./organizations/forgejoOrganizationMembersListOptionsSchema.js"
+} from "./organizations/members/forgejoOrganizationMembersListOptionsSchema.js"
 export { forgejoOrganizationPathCreate } from "./organizations/forgejoOrganizationPathCreate.js"
 export { forgejoOrganizationReferenceParse } from "./organizations/forgejoOrganizationReferenceParse.js"
-export { forgejoOrganizationRepositoriesList } from "./organizations/forgejoOrganizationRepositoriesList.js"
+export { forgejoOrganizationRepositoriesList } from "./organizations/repositories/forgejoOrganizationRepositoriesList.js"
 export {
   forgejoOrganizationRepositoriesListOptionsSchema,
   type ForgejoOrganizationRepositoriesListOptions,
-} from "./organizations/forgejoOrganizationRepositoriesListOptionsSchema.js"
-export { forgejoOrganizationRepositoryCreate } from "./organizations/forgejoOrganizationRepositoryCreate.js"
+} from "./organizations/repositories/forgejoOrganizationRepositoriesListOptionsSchema.js"
+export { forgejoOrganizationRepositoryCreate } from "./organizations/repositories/forgejoOrganizationRepositoryCreate.js"
 export {
   forgejoOrganizationRepositoryCreateOptionsSchema,
   type ForgejoOrganizationRepositoryCreateOptions,
-} from "./organizations/forgejoOrganizationRepositoryCreateOptionsSchema.js"
+} from "./organizations/repositories/forgejoOrganizationRepositoryCreateOptionsSchema.js"
 export { forgejoOrganizationSchema, type ForgejoOrganization } from "./organizations/forgejoOrganizationSchema.js"
-export { forgejoOrganizationTeamCreate } from "./organizations/forgejoOrganizationTeamCreate.js"
+export { forgejoOrganizationTeamCreate } from "./organizations/teams/forgejoOrganizationTeamCreate.js"
 export {
   forgejoOrganizationTeamCreateOptionsSchema,
   type ForgejoOrganizationTeamCreateOptions,
-} from "./organizations/forgejoOrganizationTeamCreateOptionsSchema.js"
-export { forgejoOrganizationTeamDelete } from "./organizations/forgejoOrganizationTeamDelete.js"
-export { forgejoOrganizationTeamEdit } from "./organizations/forgejoOrganizationTeamEdit.js"
+} from "./organizations/teams/forgejoOrganizationTeamCreateOptionsSchema.js"
+export { forgejoOrganizationTeamDelete } from "./organizations/teams/forgejoOrganizationTeamDelete.js"
+export { forgejoOrganizationTeamEdit } from "./organizations/teams/forgejoOrganizationTeamEdit.js"
 export {
   forgejoOrganizationTeamEditOptionsSchema,
   type ForgejoOrganizationTeamEditOptions,
-} from "./organizations/forgejoOrganizationTeamEditOptionsSchema.js"
-export { forgejoOrganizationTeamGet } from "./organizations/forgejoOrganizationTeamGet.js"
-export { forgejoOrganizationTeamIdResolve } from "./organizations/forgejoOrganizationTeamIdResolve.js"
-export { forgejoOrganizationTeamMemberAdd } from "./organizations/forgejoOrganizationTeamMemberAdd.js"
-export { forgejoOrganizationTeamMemberRemove } from "./organizations/forgejoOrganizationTeamMemberRemove.js"
-export { forgejoOrganizationTeamMembersList } from "./organizations/forgejoOrganizationTeamMembersList.js"
+} from "./organizations/teams/forgejoOrganizationTeamEditOptionsSchema.js"
+export { forgejoOrganizationTeamGet } from "./organizations/teams/forgejoOrganizationTeamGet.js"
+export { forgejoOrganizationTeamIdResolve } from "./organizations/teams/forgejoOrganizationTeamIdResolve.js"
+export { forgejoOrganizationTeamMemberAdd } from "./organizations/teams/forgejoOrganizationTeamMemberAdd.js"
+export { forgejoOrganizationTeamMemberRemove } from "./organizations/teams/forgejoOrganizationTeamMemberRemove.js"
+export { forgejoOrganizationTeamMembersList } from "./organizations/teams/forgejoOrganizationTeamMembersList.js"
 export {
   forgejoOrganizationTeamMembersListOptionsSchema,
   type ForgejoOrganizationTeamMembersListOptions,
-} from "./organizations/forgejoOrganizationTeamMembersListOptionsSchema.js"
-export { forgejoOrganizationTeamReferenceParse } from "./organizations/forgejoOrganizationTeamReferenceParse.js"
-export { forgejoOrganizationTeamRepositoriesList } from "./organizations/forgejoOrganizationTeamRepositoriesList.js"
+} from "./organizations/teams/forgejoOrganizationTeamMembersListOptionsSchema.js"
+export { forgejoOrganizationTeamReferenceParse } from "./organizations/teams/forgejoOrganizationTeamReferenceParse.js"
+export { forgejoOrganizationTeamRepositoriesList } from "./organizations/teams/forgejoOrganizationTeamRepositoriesList.js"
 export {
   forgejoOrganizationTeamRepositoriesListOptionsSchema,
   type ForgejoOrganizationTeamRepositoriesListOptions,
-} from "./organizations/forgejoOrganizationTeamRepositoriesListOptionsSchema.js"
-export { forgejoOrganizationTeamRepositoryAdd } from "./organizations/forgejoOrganizationTeamRepositoryAdd.js"
-export { forgejoOrganizationTeamRepositoryRemove } from "./organizations/forgejoOrganizationTeamRepositoryRemove.js"
-export { forgejoOrganizationTeamsList } from "./organizations/forgejoOrganizationTeamsList.js"
+} from "./organizations/teams/forgejoOrganizationTeamRepositoriesListOptionsSchema.js"
+export { forgejoOrganizationTeamRepositoryAdd } from "./organizations/teams/forgejoOrganizationTeamRepositoryAdd.js"
+export { forgejoOrganizationTeamRepositoryRemove } from "./organizations/teams/forgejoOrganizationTeamRepositoryRemove.js"
+export { forgejoOrganizationTeamsList } from "./organizations/teams/forgejoOrganizationTeamsList.js"
 export {
   forgejoOrganizationTeamsListOptionsSchema,
   type ForgejoOrganizationTeamsListOptions,
-} from "./organizations/forgejoOrganizationTeamsListOptionsSchema.js"
+} from "./organizations/teams/forgejoOrganizationTeamsListOptionsSchema.js"
 export {
   forgejoOrganizationTeamSchema,
   type ForgejoOrganizationTeam,
-} from "./organizations/forgejoOrganizationTeamSchema.js"
-export { forgejoUserActivityList } from "./users/forgejoUserActivityList.js"
+} from "./organizations/teams/forgejoOrganizationTeamSchema.js"
+export { forgejoUserActivityList } from "./users/activity/forgejoUserActivityList.js"
 export {
   forgejoUserActivityListOptionsSchema,
   type ForgejoUserActivityListOptions,
-} from "./users/forgejoUserActivityListOptionsSchema.js"
-export { forgejoUserActivitySchema, type ForgejoUserActivity } from "./users/forgejoUserActivitySchema.js"
-export { forgejoUserBlock } from "./users/forgejoUserBlock.js"
-export { forgejoUserBlocksList } from "./users/forgejoUserBlocksList.js"
+} from "./users/activity/forgejoUserActivityListOptionsSchema.js"
+export { forgejoUserActivitySchema, type ForgejoUserActivity } from "./users/activity/forgejoUserActivitySchema.js"
+export { forgejoUserBlock } from "./users/social/forgejoUserBlock.js"
+export { forgejoUserBlocksList } from "./users/social/forgejoUserBlocksList.js"
 export { forgejoUserCurrentGet } from "./users/forgejoUserCurrentGet.js"
-export { forgejoUserEmailSchema, type ForgejoUserEmail } from "./users/forgejoUserEmailSchema.js"
-export { forgejoUserEmailOptionsSchema, type ForgejoUserEmailOptions } from "./users/forgejoUserEmailOptionsSchema.js"
-export { forgejoUserEmailsAdd } from "./users/forgejoUserEmailsAdd.js"
-export { forgejoUserEmailsDelete } from "./users/forgejoUserEmailsDelete.js"
-export { forgejoUserEmailsList } from "./users/forgejoUserEmailsList.js"
-export { forgejoUserFollowersList } from "./users/forgejoUserFollowersList.js"
-export { forgejoUserFollowingList } from "./users/forgejoUserFollowingList.js"
-export { forgejoUserFollow } from "./users/forgejoUserFollow.js"
+export { forgejoUserEmailSchema, type ForgejoUserEmail } from "./users/emails/forgejoUserEmailSchema.js"
+export {
+  forgejoUserEmailOptionsSchema,
+  type ForgejoUserEmailOptions,
+} from "./users/emails/forgejoUserEmailOptionsSchema.js"
+export { forgejoUserEmailsAdd } from "./users/emails/forgejoUserEmailsAdd.js"
+export { forgejoUserEmailsDelete } from "./users/emails/forgejoUserEmailsDelete.js"
+export { forgejoUserEmailsList } from "./users/emails/forgejoUserEmailsList.js"
+export { forgejoUserFollowersList } from "./users/social/forgejoUserFollowersList.js"
+export { forgejoUserFollowingList } from "./users/social/forgejoUserFollowingList.js"
+export { forgejoUserFollow } from "./users/social/forgejoUserFollow.js"
 export { forgejoUserGet } from "./users/forgejoUserGet.js"
-export { forgejoUserGpgKeyDelete } from "./users/forgejoUserGpgKeyDelete.js"
-export { forgejoUserGpgKeyGet } from "./users/forgejoUserGpgKeyGet.js"
-export { forgejoUserGpgKeySchema, type ForgejoUserGpgKey } from "./users/forgejoUserGpgKeySchema.js"
-export { forgejoUserGpgKeyUpload } from "./users/forgejoUserGpgKeyUpload.js"
+export { forgejoUserGpgKeyDelete } from "./users/gpgKeys/forgejoUserGpgKeyDelete.js"
+export { forgejoUserGpgKeyGet } from "./users/gpgKeys/forgejoUserGpgKeyGet.js"
+export { forgejoUserGpgKeySchema, type ForgejoUserGpgKey } from "./users/gpgKeys/forgejoUserGpgKeySchema.js"
+export { forgejoUserGpgKeyUpload } from "./users/gpgKeys/forgejoUserGpgKeyUpload.js"
 export {
   forgejoUserGpgKeyUploadOptionsSchema,
   type ForgejoUserGpgKeyUploadOptions,
-} from "./users/forgejoUserGpgKeyUploadOptionsSchema.js"
-export { forgejoUserGpgKeyVerify } from "./users/forgejoUserGpgKeyVerify.js"
+} from "./users/gpgKeys/forgejoUserGpgKeyUploadOptionsSchema.js"
+export { forgejoUserGpgKeyVerify } from "./users/gpgKeys/forgejoUserGpgKeyVerify.js"
 export {
   forgejoUserGpgKeyVerifyOptionsSchema,
   type ForgejoUserGpgKeyVerifyOptions,
-} from "./users/forgejoUserGpgKeyVerifyOptionsSchema.js"
-export { forgejoUserGpgKeysList } from "./users/forgejoUserGpgKeysList.js"
-export { forgejoUserGpgVerificationTokenGet } from "./users/forgejoUserGpgVerificationTokenGet.js"
-export { forgejoUserOrganizationsList } from "./users/forgejoUserOrganizationsList.js"
+} from "./users/gpgKeys/forgejoUserGpgKeyVerifyOptionsSchema.js"
+export { forgejoUserGpgKeysList } from "./users/gpgKeys/forgejoUserGpgKeysList.js"
+export { forgejoUserGpgVerificationTokenGet } from "./users/gpgKeys/forgejoUserGpgVerificationTokenGet.js"
+export { forgejoUserOrganizationsList } from "./users/organizations/forgejoUserOrganizationsList.js"
 export { forgejoUserProfileEdit } from "./users/forgejoUserProfileEdit.js"
 export {
   forgejoUserProfileEditOptionsSchema,
   type ForgejoUserProfileEditOptions,
 } from "./users/forgejoUserProfileEditOptionsSchema.js"
-export { forgejoUserRepositoriesList } from "./users/forgejoUserRepositoriesList.js"
+export { forgejoUserRepositoriesList } from "./users/repositories/forgejoUserRepositoriesList.js"
 export {
   forgejoUserRepositoriesListOptionsSchema,
   type ForgejoUserRepositoriesListOptions,
-} from "./users/forgejoUserRepositoriesListOptionsSchema.js"
+} from "./users/repositories/forgejoUserRepositoriesListOptionsSchema.js"
 export { forgejoUserReferenceParse } from "./users/forgejoUserReferenceParse.js"
 export { forgejoUserSchema, type ForgejoUser } from "./users/forgejoUserSchema.js"
 export { forgejoUserSearch } from "./users/forgejoUserSearch.js"
@@ -591,17 +594,17 @@ export {
   forgejoUserSearchOptionsSchema,
   type ForgejoUserSearchOptions,
 } from "./users/forgejoUserSearchOptionsSchema.js"
-export { forgejoUserSshKeyDelete } from "./users/forgejoUserSshKeyDelete.js"
-export { forgejoUserSshKeyGet } from "./users/forgejoUserSshKeyGet.js"
-export { forgejoUserSshKeySchema, type ForgejoUserSshKey } from "./users/forgejoUserSshKeySchema.js"
-export { forgejoUserSshKeyUpload } from "./users/forgejoUserSshKeyUpload.js"
+export { forgejoUserSshKeyDelete } from "./users/sshKeys/forgejoUserSshKeyDelete.js"
+export { forgejoUserSshKeyGet } from "./users/sshKeys/forgejoUserSshKeyGet.js"
+export { forgejoUserSshKeySchema, type ForgejoUserSshKey } from "./users/sshKeys/forgejoUserSshKeySchema.js"
+export { forgejoUserSshKeyUpload } from "./users/sshKeys/forgejoUserSshKeyUpload.js"
 export {
   forgejoUserSshKeyUploadOptionsSchema,
   type ForgejoUserSshKeyUploadOptions,
-} from "./users/forgejoUserSshKeyUploadOptionsSchema.js"
-export { forgejoUserSshKeysList } from "./users/forgejoUserSshKeysList.js"
-export { forgejoUserUnblock } from "./users/forgejoUserUnblock.js"
-export { forgejoUserUnfollow } from "./users/forgejoUserUnfollow.js"
+} from "./users/sshKeys/forgejoUserSshKeyUploadOptionsSchema.js"
+export { forgejoUserSshKeysList } from "./users/sshKeys/forgejoUserSshKeysList.js"
+export { forgejoUserUnblock } from "./users/social/forgejoUserUnblock.js"
+export { forgejoUserUnfollow } from "./users/social/forgejoUserUnfollow.js"
 export { forgejoWikiCloneMetadataGet } from "./wiki/forgejoWikiCloneMetadataGet.js"
 export {
   forgejoWikiCloneMetadataSchema,
@@ -611,55 +614,58 @@ export { forgejoWikiContentsGet } from "./wiki/forgejoWikiContentsGet.js"
 export { forgejoWikiPageGet } from "./wiki/forgejoWikiPageGet.js"
 export { forgejoWikiPageList } from "./wiki/forgejoWikiPageList.js"
 export { forgejoWikiPageSchema, type ForgejoWikiPage } from "./wiki/forgejoWikiPageSchema.js"
-export { forgejoActionRunGet } from "./actions/forgejoActionRunGet.js"
-export { forgejoActionRunsList } from "./actions/forgejoActionRunsList.js"
+export { forgejoActionRunGet } from "./actions/runs/forgejoActionRunGet.js"
+export { forgejoActionRunsList } from "./actions/runs/forgejoActionRunsList.js"
 export {
   forgejoActionRunsListOptionsSchema,
   type ForgejoActionRunsListOptions,
-} from "./actions/forgejoActionRunsListOptionsSchema.js"
-export { forgejoActionRunSchema, type ForgejoActionRun } from "./actions/forgejoActionRunSchema.js"
+} from "./actions/runs/forgejoActionRunsListOptionsSchema.js"
+export { forgejoActionRunSchema, type ForgejoActionRun } from "./actions/runs/forgejoActionRunSchema.js"
 export {
   forgejoActionRunsResponseSchema,
   type ForgejoActionRunsResponse,
-} from "./actions/forgejoActionRunsResponseSchema.js"
-export { forgejoActionSecretCreate } from "./actions/forgejoActionSecretCreate.js"
-export { forgejoActionSecretsCreate } from "./actions/forgejoActionSecretsCreate.js"
+} from "./actions/runs/forgejoActionRunsResponseSchema.js"
+export { forgejoActionSecretCreate } from "./actions/secrets/forgejoActionSecretCreate.js"
+export { forgejoActionSecretsCreate } from "./actions/secrets/forgejoActionSecretsCreate.js"
 export {
   forgejoActionSecretCreateOptionsSchema,
   type ForgejoActionSecretCreateOptions,
-} from "./actions/forgejoActionSecretCreateOptionsSchema.js"
-export { forgejoActionSecretDelete } from "./actions/forgejoActionSecretDelete.js"
-export { forgejoActionSecretsDelete } from "./actions/forgejoActionSecretsDelete.js"
-export { forgejoActionSecretList } from "./actions/forgejoActionSecretList.js"
-export { forgejoActionSecretsList } from "./actions/forgejoActionSecretsList.js"
-export { forgejoActionSecretSchema, type ForgejoActionSecret } from "./actions/forgejoActionSecretSchema.js"
-export { forgejoActionTasksList } from "./actions/forgejoActionTasksList.js"
+} from "./actions/secrets/forgejoActionSecretCreateOptionsSchema.js"
+export { forgejoActionSecretDelete } from "./actions/secrets/forgejoActionSecretDelete.js"
+export { forgejoActionSecretsDelete } from "./actions/secrets/forgejoActionSecretsDelete.js"
+export { forgejoActionSecretList } from "./actions/secrets/forgejoActionSecretList.js"
+export { forgejoActionSecretsList } from "./actions/secrets/forgejoActionSecretsList.js"
+export { forgejoActionSecretSchema, type ForgejoActionSecret } from "./actions/secrets/forgejoActionSecretSchema.js"
+export { forgejoActionTasksList } from "./actions/tasks/forgejoActionTasksList.js"
 export {
   forgejoActionTasksListOptionsSchema,
   type ForgejoActionTasksListOptions,
-} from "./actions/forgejoActionTasksListOptionsSchema.js"
-export { forgejoActionTaskSchema, type ForgejoActionTask } from "./actions/forgejoActionTaskSchema.js"
+} from "./actions/tasks/forgejoActionTasksListOptionsSchema.js"
+export { forgejoActionTaskSchema, type ForgejoActionTask } from "./actions/tasks/forgejoActionTaskSchema.js"
 export {
   forgejoActionTasksResponseSchema,
   type ForgejoActionTasksResponse,
-} from "./actions/forgejoActionTasksResponseSchema.js"
-export { forgejoActionVariableCreate } from "./actions/forgejoActionVariableCreate.js"
-export { forgejoActionVariablesCreate } from "./actions/forgejoActionVariablesCreate.js"
+} from "./actions/tasks/forgejoActionTasksResponseSchema.js"
+export { forgejoActionVariableCreate } from "./actions/variables/forgejoActionVariableCreate.js"
+export { forgejoActionVariablesCreate } from "./actions/variables/forgejoActionVariablesCreate.js"
 export {
   forgejoActionVariableCreateOptionsSchema,
   type ForgejoActionVariableCreateOptions,
-} from "./actions/forgejoActionVariableCreateOptionsSchema.js"
-export { forgejoActionVariableDelete } from "./actions/forgejoActionVariableDelete.js"
-export { forgejoActionVariablesDelete } from "./actions/forgejoActionVariablesDelete.js"
-export { forgejoActionVariableList } from "./actions/forgejoActionVariableList.js"
-export { forgejoActionVariablesList } from "./actions/forgejoActionVariablesList.js"
-export { forgejoActionVariableSchema, type ForgejoActionVariable } from "./actions/forgejoActionVariableSchema.js"
-export { forgejoActionWorkflowDispatch } from "./actions/forgejoActionWorkflowDispatch.js"
+} from "./actions/variables/forgejoActionVariableCreateOptionsSchema.js"
+export { forgejoActionVariableDelete } from "./actions/variables/forgejoActionVariableDelete.js"
+export { forgejoActionVariablesDelete } from "./actions/variables/forgejoActionVariablesDelete.js"
+export { forgejoActionVariableList } from "./actions/variables/forgejoActionVariableList.js"
+export { forgejoActionVariablesList } from "./actions/variables/forgejoActionVariablesList.js"
+export {
+  forgejoActionVariableSchema,
+  type ForgejoActionVariable,
+} from "./actions/variables/forgejoActionVariableSchema.js"
+export { forgejoActionWorkflowDispatch } from "./actions/workflows/forgejoActionWorkflowDispatch.js"
 export {
   forgejoActionWorkflowDispatchOptionsSchema,
   type ForgejoActionWorkflowDispatchOptions,
-} from "./actions/forgejoActionWorkflowDispatchOptionsSchema.js"
+} from "./actions/workflows/forgejoActionWorkflowDispatchOptionsSchema.js"
 export {
   forgejoActionWorkflowDispatchRunSchema,
   type ForgejoActionWorkflowDispatchRun,
-} from "./actions/forgejoActionWorkflowDispatchRunSchema.js"
+} from "./actions/workflows/forgejoActionWorkflowDispatchRunSchema.js"
