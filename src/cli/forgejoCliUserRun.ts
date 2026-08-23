@@ -27,6 +27,7 @@ import { forgejoUserSshKeyUpload } from "../users/forgejoUserSshKeyUpload.js"
 import { forgejoUserSshKeysList } from "../users/forgejoUserSshKeysList.js"
 import { forgejoUserUnblock } from "../users/forgejoUserUnblock.js"
 import { forgejoUserUnfollow } from "../users/forgejoUserUnfollow.js"
+import { forgejoEnvironmentDefaultsResolve } from "../configuration/forgejoEnvironmentDefaults.js"
 import type { ForgejoCliInvocation } from "./forgejoCliParse.js"
 import type { ForgejoResult } from "../errors/forgejoResult.js"
 import { forgejoCliEditorOpen } from "./forgejoCliEditorOpen.js"
@@ -296,6 +297,7 @@ async function forgejoCliUserRunGpg(
 }
 
 async function forgejoCliUserRun(invocation: ForgejoCliUserInvocation, options: ForgejoCliUserRunOptions) {
+  const environmentDefaults = forgejoEnvironmentDefaultsResolve({ env: options.env, cwd: invocation.cwd })
   const host = await forgejoCliHostClient({
     ...options,
     host: invocation.host,
@@ -310,10 +312,9 @@ async function forgejoCliUserRun(invocation: ForgejoCliUserInvocation, options: 
     return forgejoCliUserOutput(users.data, invocation, options)
   }
   if (invocation.kind === "user-view" || invocation.kind === "user-browse") {
+    const userTarget = invocation.user ?? environmentDefaults.user
     const user =
-      invocation.user === undefined
-        ? await forgejoUserCurrentGet(transport)
-        : await forgejoUserGet(transport, invocation.user)
+      userTarget === undefined ? await forgejoUserCurrentGet(transport) : await forgejoUserGet(transport, userTarget)
     if (!user.success) return createResultError("forgejoCliUserRun", user.errorMessage)
     if (invocation.kind === "user-browse") {
       const username = forgejoCliUserName(user.data)
@@ -348,15 +349,17 @@ async function forgejoCliUserRun(invocation: ForgejoCliUserInvocation, options: 
     )
   }
   if (invocation.kind === "user-following" || invocation.kind === "user-followers") {
+    const userTarget = invocation.user ?? environmentDefaults.user
     const users =
       invocation.kind === "user-following"
-        ? await forgejoUserFollowingList(transport, invocation.user)
-        : await forgejoUserFollowersList(transport, invocation.user)
+        ? await forgejoUserFollowingList(transport, userTarget)
+        : await forgejoUserFollowersList(transport, userTarget)
     if (!users.success) return createResultError("forgejoCliUserRun", users.errorMessage)
     return forgejoCliUserOutput(users.data, invocation, options)
   }
   if (invocation.kind === "user-repos") {
-    const repos = await forgejoUserRepositoriesList(transport, invocation.user, {
+    const userTarget = invocation.user ?? environmentDefaults.user
+    const repos = await forgejoUserRepositoriesList(transport, userTarget, {
       starred: invocation.starred,
       page: invocation.page,
       limit: 50,
@@ -368,12 +371,14 @@ async function forgejoCliUserRun(invocation: ForgejoCliUserInvocation, options: 
     return forgejoCliUserOutput(repos.data, invocation, options)
   }
   if (invocation.kind === "user-orgs") {
-    const orgs = await forgejoUserOrganizationsList(transport, invocation.user)
+    const orgs = await forgejoUserOrganizationsList(transport, invocation.user ?? environmentDefaults.user)
     if (!orgs.success) return createResultError("forgejoCliUserRun", orgs.errorMessage)
     return forgejoCliUserOutput(orgs.data, invocation, options)
   }
   if (invocation.kind === "user-activity") {
-    const activities = await forgejoUserActivityList(transport, invocation.user, { onlyPerformedBy: true })
+    const activities = await forgejoUserActivityList(transport, invocation.user ?? environmentDefaults.user, {
+      onlyPerformedBy: true,
+    })
     if (!activities.success) return createResultError("forgejoCliUserRun", activities.errorMessage)
     return forgejoCliUserOutput(activities.data, invocation, options)
   }

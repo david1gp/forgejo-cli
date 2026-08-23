@@ -35,8 +35,16 @@ test("parses the user and organization command trees", () => {
   if (label.success)
     expect(label.data).toMatchObject({ kind: "org-label-edit", options: { color: "#ff0000", archived: true } })
 
+  const omittedUser = forgejoCliParse(["user", "repos"], { stdoutIsTty: false })
+  expect(omittedUser.success).toBe(true)
+  if (omittedUser.success) {
+    expect(omittedUser.data.kind).toBe("user-repos")
+    expect("user" in omittedUser.data).toBe(false)
+  }
+
   expect(forgejoCliParse(["user", "edit", "name", "--editor"], { stdoutIsTty: false }).success).toBe(false)
   expect(forgejoCliParse(["user", "edit", "bio", "--unset"], { stdoutIsTty: false }).success).toBe(false)
+  expect(forgejoCliParse(["org", "view"], { stdoutIsTty: false }).success).toBe(false)
   expect(forgejoCliParse(["org", "list", "--only-member-of", "--page", "2"], { stdoutIsTty: false }).success).toBe(
     false,
   )
@@ -72,6 +80,92 @@ test("runs user view and browse with JSON, browser, and current-user resolution"
   expect(browse.success).toBe(true)
   expect(opened).toBe("https://forgejo.example.test/alice")
   expect(requests).toEqual(["https://forgejo.example.test/api/v1/user", "https://forgejo.example.test/api/v1/user"])
+})
+
+test("uses FJ_USER for omitted user targets without overriding explicit users", async () => {
+  const requests: string[] = []
+  const fetch: ForgejoFetch = async (input) => {
+    requests.push(String(input))
+    return new Response(JSON.stringify([]), { status: 200 })
+  }
+  const environment = { ...env, FJ_USER: "alice" }
+
+  const defaulted = await forgejoCliRun(["--host", "https://forgejo.example.test", "user", "repos"], {
+    env: environment,
+    fetch,
+    outputWrite: capture().outputWrite,
+  })
+  const explicit = await forgejoCliRun(["--host", "https://forgejo.example.test", "user", "repos", "bob"], {
+    env: environment,
+    fetch,
+    outputWrite: capture().outputWrite,
+  })
+
+  expect(defaulted.success).toBe(true)
+  expect(explicit.success).toBe(true)
+  expect(requests).toEqual([
+    "https://forgejo.example.test/api/v1/users/alice/repos?page=1&limit=50",
+    "https://forgejo.example.test/api/v1/users/bob/repos?page=1&limit=50",
+  ])
+})
+
+test("keeps FJ_USER and FJ_ORG as separate CLI defaults", async () => {
+  const requests: string[] = []
+  const fetch: ForgejoFetch = async (input) => {
+    requests.push(String(input))
+    const url = new URL(String(input))
+    return url.pathname.endsWith("/users/alice") || url.pathname.endsWith("/users/bob")
+      ? new Response(JSON.stringify({ login: url.pathname.endsWith("/alice") ? "alice" : "bob" }), { status: 200 })
+      : new Response(JSON.stringify({}), { status: 200 })
+  }
+  const environment = { ...env, FJ_USER: "alice", FJ_ORG: "team" }
+
+  const defaulted = await forgejoCliRun(["--host", "https://forgejo.example.test", "user", "view"], {
+    env: environment,
+    fetch,
+    outputWrite: capture().outputWrite,
+  })
+  const explicit = await forgejoCliRun(["--host", "https://forgejo.example.test", "user", "view", "bob"], {
+    env: environment,
+    fetch,
+    outputWrite: capture().outputWrite,
+  })
+
+  expect(defaulted.success).toBe(true)
+  expect(explicit.success).toBe(true)
+  expect(requests).toEqual([
+    "https://forgejo.example.test/api/v1/users/alice",
+    "https://forgejo.example.test/api/v1/users/bob",
+  ])
+})
+
+test("ignores blank FJ_USER and FJ_ORG values instead of creating empty targets", async () => {
+  const requests: string[] = []
+  const fetch: ForgejoFetch = async (input) => {
+    requests.push(String(input))
+    const url = new URL(String(input))
+    return url.pathname === "/api/v1/user/repos"
+      ? new Response(JSON.stringify([]), { status: 200 })
+      : new Response(JSON.stringify({ name: "demo", full_name: "demo" }), { status: 201 })
+  }
+
+  const repository = await forgejoCliRun(["--host", "https://forgejo.example.test", "repo", "create", "demo"], {
+    env: { ...env, FJ_ORG: " ", FJ_USER: "alice" },
+    fetch,
+    outputWrite: capture().outputWrite,
+  })
+  const user = await forgejoCliRun(["--host", "https://forgejo.example.test", "user", "repos"], {
+    env: { ...env, FJ_ORG: "team", FJ_USER: "\t" },
+    fetch,
+    outputWrite: capture().outputWrite,
+  })
+
+  expect(repository.success).toBe(true)
+  expect(user.success).toBe(true)
+  expect(requests).toEqual([
+    "https://forgejo.example.test/api/v1/user/repos",
+    "https://forgejo.example.test/api/v1/user/repos?page=1&limit=50",
+  ])
 })
 
 test("does not submit an empty profile value without --unset", async () => {

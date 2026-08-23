@@ -6,6 +6,7 @@ import { forgejoOAuthAuthorizationCodePkceExchange } from "../auth/forgejoOAuthA
 import { forgejoOAuthClientIdResolve } from "../auth/forgejoOAuthClientIdResolve.js"
 import { forgejoOAuthLoopbackReceiverCreate } from "../auth/forgejoOAuthLoopbackReceiverCreate.js"
 import { forgejoClientCreate } from "../client/forgejoClientCreate.js"
+import { forgejoEnvironmentDefaultsResolve } from "../configuration/forgejoEnvironmentDefaults.js"
 import { forgejoConfigurationPathResolve } from "../configuration/forgejoConfigurationPathResolve.js"
 import { forgejoCredentialsDefaultSshSet } from "../credentials/forgejoCredentialsDefaultSshSet.js"
 import { forgejoCredentialsList } from "../credentials/forgejoCredentialsList.js"
@@ -38,6 +39,7 @@ import { forgejoRepositoryUnitsEdit } from "../repositories/forgejoRepositoryUni
 import { forgejoRepositoryUnwatch } from "../repositories/forgejoRepositoryUnwatch.js"
 import { forgejoRepositoryWatch } from "../repositories/forgejoRepositoryWatch.js"
 import { forgejoRepositoryWatchStatusGet } from "../repositories/forgejoRepositoryWatchStatusGet.js"
+import { forgejoSshUrlApplyBase } from "../urls/forgejoSshUrlApplyBase.js"
 import { forgejoActionSecretCreate } from "../actions/forgejoActionSecretCreate.js"
 import { forgejoActionSecretDelete } from "../actions/forgejoActionSecretDelete.js"
 import { forgejoActionSecretList } from "../actions/forgejoActionSecretList.js"
@@ -455,13 +457,14 @@ async function forgejoCliRepositoryRun(
   const style = invocation.style
   const json = invocation.json
   const execute = options.execute ?? forgejoCliProcessExecute
+  const environmentDefaults = forgejoEnvironmentDefaultsResolve({ env: options.env, cwd: invocation.cwd })
 
   if (invocation.kind === "repo-create") {
     const host = await forgejoCliHostClient(invocation.host, invocation.remote, invocation.cwd, options)
     if (!host.success) return host
     const created = await forgejoRepositoryCreate(host.data.client.transport, {
       name: invocation.name,
-      organization: invocation.organization,
+      organization: invocation.organization ?? environmentDefaults.organization,
       description: invocation.description,
       private: invocation.private,
       autoInit: false,
@@ -472,8 +475,11 @@ async function forgejoCliRepositoryRun(
     if (!created.success) return createResultError("forgejoCliRun", created.errorMessage)
     const localRemote = invocation.remote ?? (invocation.push ? "origin" : undefined)
     if (localRemote) {
-      const url = invocation.ssh === true ? created.data.ssh_url : created.data.clone_url
-      if (typeof url !== "string") return createResultError("forgejoCliRun", "Forgejo did not return a clone URL")
+      const selectedUrl = invocation.ssh === true ? created.data.ssh_url : created.data.clone_url
+      if (typeof selectedUrl !== "string")
+        return createResultError("forgejoCliRun", "Forgejo did not return a clone URL")
+      const url =
+        invocation.ssh === true ? forgejoSshUrlApplyBase(selectedUrl, environmentDefaults.sshBase) : selectedUrl
       const added = await execute({
         command: "git",
         args: ["remote", "add", localRemote, url],
@@ -494,7 +500,7 @@ async function forgejoCliRepositoryRun(
     const migrated = await forgejoRepositoryMigrate(host.data.client.transport, {
       cloneAddr: invocation.cloneAddr,
       repoName: invocation.repoName,
-      repoOwner: invocation.repoOwner,
+      repoOwner: invocation.repoOwner ?? environmentDefaults.organization,
       mirror: invocation.mirror,
       private: invocation.private,
       service: invocation.service,
@@ -534,7 +540,7 @@ async function forgejoCliRepositoryRun(
   if (invocation.kind === "repo-fork") {
     const forked = await forgejoRepositoryFork(transport, repository, {
       name: invocation.name,
-      organization: invocation.organization,
+      organization: invocation.organization ?? environmentDefaults.organization,
     })
     if (!forked.success) return createResultError("forgejoCliRun", forked.errorMessage)
     return forgejoCliRepositoryWrite(forked.data, style, json, outputWrite)
@@ -558,8 +564,9 @@ async function forgejoCliRepositoryRun(
   if (invocation.kind === "repo-clone") {
     const metadata = await forgejoRepositoryCloneMetadataGet(transport, repository)
     if (!metadata.success) return createResultError("forgejoCliRun", metadata.errorMessage)
-    const url = invocation.ssh === true ? metadata.data.sshUrl : metadata.data.cloneUrl
-    if (!url) return createResultError("forgejoCliRun", "Forgejo did not return the requested clone URL")
+    const selectedUrl = invocation.ssh === true ? metadata.data.sshUrl : metadata.data.cloneUrl
+    if (!selectedUrl) return createResultError("forgejoCliRun", "Forgejo did not return the requested clone URL")
+    const url = invocation.ssh === true ? forgejoSshUrlApplyBase(selectedUrl, environmentDefaults.sshBase) : selectedUrl
     const cloneName = metadata.data.name ?? repository.name
     const destination = invocation.path ?? `./${cloneName}`
     const args = [
@@ -576,9 +583,11 @@ async function forgejoCliRepositoryRun(
       const parent = metadata.data.parent as Record<string, unknown>
       const upstreamUrl = invocation.ssh === true ? parent.ssh_url : parent.clone_url
       if (typeof upstreamUrl === "string") {
+        const remoteUrl =
+          invocation.ssh === true ? forgejoSshUrlApplyBase(upstreamUrl, environmentDefaults.sshBase) : upstreamUrl
         const upstream = await execute({
           command: "git",
-          args: ["remote", "add", "upstream", upstreamUrl],
+          args: ["remote", "add", "upstream", remoteUrl],
           cwd: destination,
         })
         if (!upstream.success) return createResultError("forgejoCliRun", upstream.errorMessage)
@@ -760,6 +769,7 @@ async function forgejoCliWikiRun(
   invocation: ForgejoCliWikiInvocation,
   options: ForgejoCliRepositoryRunOptions,
 ): Promise<ForgejoResult<null>> {
+  const environmentDefaults = forgejoEnvironmentDefaultsResolve({ env: options.env, cwd: invocation.cwd })
   const context = await forgejoCliRepositoryContext(
     invocation.repository,
     invocation.host,
@@ -808,8 +818,9 @@ async function forgejoCliWikiRun(
   }
   const metadata = await forgejoWikiCloneMetadataGet(transport, repository)
   if (!metadata.success) return createResultError("forgejoCliRun", metadata.errorMessage)
-  const url = invocation.ssh === true ? metadata.data.sshUrl : metadata.data.cloneUrl
-  if (!url) return createResultError("forgejoCliRun", "Forgejo did not return the requested wiki clone URL")
+  const selectedUrl = invocation.ssh === true ? metadata.data.sshUrl : metadata.data.cloneUrl
+  if (!selectedUrl) return createResultError("forgejoCliRun", "Forgejo did not return the requested wiki clone URL")
+  const url = invocation.ssh === true ? forgejoSshUrlApplyBase(selectedUrl, environmentDefaults.sshBase) : selectedUrl
   const destination = invocation.path ?? `./${metadata.data.name ?? repository.name}-wiki`
   const execute = options.execute ?? forgejoCliProcessExecute
   const cloned = await execute({

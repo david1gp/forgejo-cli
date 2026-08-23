@@ -1,6 +1,7 @@
 import { createResult, createResultError } from "#result"
 import type { ForgejoResult } from "../errors/forgejoResult.js"
 import { forgejoClientCreate } from "../client/forgejoClientCreate.js"
+import { forgejoEnvironmentDefaultsResolve } from "../configuration/forgejoEnvironmentDefaults.js"
 import { forgejoPullRequestAssigneeAdd } from "../pullRequests/forgejoPullRequestAssigneeAdd.js"
 import { forgejoPullRequestAssigneeRemove } from "../pullRequests/forgejoPullRequestAssigneeRemove.js"
 import { forgejoPullRequestBlockedByAdd } from "../pullRequests/forgejoPullRequestBlockedByAdd.js"
@@ -31,6 +32,7 @@ import { forgejoPullRequestIdentifierParse } from "../pullRequests/forgejoPullRe
 import { forgejoRepositoryCloneMetadataGet } from "../repositories/forgejoRepositoryCloneMetadataGet.js"
 import { forgejoRepositoryContextResolve } from "../repositories/forgejoRepositoryContextResolve.js"
 import { forgejoRepositoryGet } from "../repositories/forgejoRepositoryGet.js"
+import { forgejoSshUrlApplyBase } from "../urls/forgejoSshUrlApplyBase.js"
 import { forgejoIssueReferenceParse } from "../issues/forgejoIssueReferenceParse.js"
 import { forgejoCliBrowserOpen } from "./forgejoCliBrowserOpen.js"
 import { forgejoCliEditorOpen } from "./forgejoCliEditorOpen.js"
@@ -496,8 +498,10 @@ export async function forgejoCliPullRequestRun(
     const metadata = await forgejoRepositoryCloneMetadataGet(transport, resolvedReference.data.repository)
     if (!metadata.success) return createResultError("forgejoCliPullRequestRun", metadata.errorMessage)
     const ssh = invocation.ssh ?? false
-    const url = ssh ? metadata.data.sshUrl : metadata.data.cloneUrl
-    if (!url) return createResultError("forgejoCliPullRequestRun", "Forgejo did not return a clone URL")
+    const selectedUrl = ssh ? metadata.data.sshUrl : metadata.data.cloneUrl
+    if (!selectedUrl) return createResultError("forgejoCliPullRequestRun", "Forgejo did not return a clone URL")
+    const environmentDefaults = forgejoEnvironmentDefaultsResolve({ env: options.env, cwd: invocation.cwd })
+    const url = ssh ? forgejoSshUrlApplyBase(selectedUrl, environmentDefaults.sshBase) : selectedUrl
     const fetchArgs = [
       "fetch",
       ...(ssh && invocation.identityFile

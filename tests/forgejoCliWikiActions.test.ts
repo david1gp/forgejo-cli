@@ -89,14 +89,18 @@ test("runs wiki view, clone, and browse with injectable process and browser effe
   const clone = await forgejoCliRun(
     ["--host", "https://forgejo.example.test", "wiki", "clone", "--repo", "owner/demo", "--ssh", "/tmp/demo-wiki"],
     {
-      env,
+      env: { ...env, FJ_SSH_BASE: "ssh://git@ssh.git.contentoren.de:2222" },
       fetch,
       execute,
       outputWrite: capture.outputWrite,
     },
   )
   expect(clone.success).toBe(true)
-  expect(commands[0]?.args).toEqual(["clone", "ssh://git@forgejo.example.test/owner/demo.wiki.git", "/tmp/demo-wiki"])
+  expect(commands[0]?.args).toEqual([
+    "clone",
+    "ssh://git@ssh.git.contentoren.de:2222/owner/demo.wiki.git",
+    "/tmp/demo-wiki",
+  ])
 
   let opened = ""
   const browse = await forgejoCliRun(

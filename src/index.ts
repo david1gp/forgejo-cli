@@ -4,6 +4,11 @@ export { forgejoClientCreate } from "./client/forgejoClientCreate.js"
 export type { ForgejoClient, ForgejoClientCreateOptions } from "./client/forgejoClientCreate.js"
 export { forgejoConfigurationLoad } from "./configuration/forgejoConfigurationLoad.js"
 export type { ForgejoConfigurationLoadOptions } from "./configuration/forgejoConfigurationLoad.js"
+export { forgejoEnvironmentDefaultsResolve } from "./configuration/forgejoEnvironmentDefaults.js"
+export type {
+  ForgejoEnvironmentDefaults,
+  ForgejoEnvironmentDefaultsResolveOptions,
+} from "./configuration/forgejoEnvironmentDefaults.js"
 export { forgejoConfigurationParse } from "./configuration/forgejoConfigurationParse.js"
 export { forgejoConfigurationPathResolve } from "./configuration/forgejoConfigurationPathResolve.js"
 export type { ForgejoConfigurationPathResolveOptions } from "./configuration/forgejoConfigurationPathResolve.js"

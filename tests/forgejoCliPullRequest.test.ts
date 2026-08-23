@@ -129,7 +129,10 @@ test("checks out a pull request with injected Git execution", async () => {
   const result = await forgejoCliRun(
     ["-H", "https://forgejo.example.test", "pr", "checkout", "owner/repo#7", "--ssh", "--identity-file", "/tmp/key"],
     {
-      env: { FORGEJO_TOKEN: "test-token" },
+      env: {
+        FORGEJO_TOKEN: "test-token",
+        FJ_SSH_BASE: "ssh://git@ssh.git.contentoren.de:2222",
+      },
       fetch: async () =>
         new Response(
           JSON.stringify({
@@ -151,7 +154,13 @@ test("checks out a pull request with injected Git execution", async () => {
   expect(result).toEqual({ success: true, data: 0 })
   expect(commands.map((command) => command.args)).toEqual([
     ["status", "--porcelain"],
-    ["fetch", "-c", "core.sshCommand=ssh -i /tmp/key", "git@forgejo.example.test:owner/repo.git", "pull/7/head"],
+    [
+      "fetch",
+      "-c",
+      "core.sshCommand=ssh -i /tmp/key",
+      "ssh://git@ssh.git.contentoren.de:2222/owner/repo.git",
+      "pull/7/head",
+    ],
     ["checkout", "-B", "pr-owner-7", "FETCH_HEAD"],
   ])
 })

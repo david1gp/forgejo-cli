@@ -1,4 +1,5 @@
 import { createResult, createResultError } from "#result"
+import { forgejoEnvironmentDefaultsResolve } from "../configuration/forgejoEnvironmentDefaults.js"
 import type { ForgejoResult } from "../errors/forgejoResult.js"
 import { forgejoConfigurationLoad } from "../configuration/forgejoConfigurationLoad.js"
 import type { ForgejoConfiguration } from "../configuration/forgejoConfigurationSchema.js"
@@ -35,7 +36,8 @@ function forgejoClientBaseUrlInput(
 ): unknown {
   if (options.baseUrl !== undefined) return options.baseUrl
   if (options.host !== undefined) return options.host
-  return env.FORGEJO_BASE_URL ?? env.FORGEJO_URL ?? env.FORGEJO_HOST ?? env.FJ_HOST ?? env.FJ_FALLBACK_HOST
+  const defaults = forgejoEnvironmentDefaultsResolve({ env })
+  return defaults.host ?? defaults.fallbackHost
 }
 
 export async function forgejoClientCreate(
