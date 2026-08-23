@@ -28,7 +28,7 @@ Create `@adaptive-ds/forgejo-cli` as a public MIT-licensed TypeScript package th
 - [x] 3. Implement and test repository, issue, pull request, release, tag, wiki, actions, user, organization, and authentication library contexts.
 - [x] 4. Implement the `fj` CLI command tree and output/input behavior over the library.
 - [x] 5. Verify formatting, types, unit tests, build/package contents, CLI smoke behavior, and safe live Forgejo API calls; correct defects.
-- [x] 6. Initialize version control and publish the completed project as a public GitHub repository.
+- [x] 6. Publish the completed project as a public GitHub repository.
 
 ## Paths
 
