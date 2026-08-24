@@ -1,7 +1,7 @@
 import { createResult, createResultError } from "#result"
 import type { ForgejoResult } from "../errors/forgejoResult.js"
 import { forgejoClientCreate } from "../client/forgejoClientCreate.js"
-import { forgejoEnvironmentDefaultsResolve } from "../configuration/forgejoEnvironmentDefaults.js"
+import { forgejoDefaultsResolve } from "../configuration/forgejoDefaultsResolve.js"
 import { forgejoPullRequestAssigneeAdd } from "../pullRequests/forgejoPullRequestAssigneeAdd.js"
 import { forgejoPullRequestAssigneeRemove } from "../pullRequests/forgejoPullRequestAssigneeRemove.js"
 import { forgejoPullRequestBlockedByAdd } from "../pullRequests/dependencies/forgejoPullRequestBlockedByAdd.js"
@@ -500,8 +500,9 @@ export async function forgejoCliPullRequestRun(
     const ssh = invocation.ssh ?? false
     const selectedUrl = ssh ? metadata.data.sshUrl : metadata.data.cloneUrl
     if (!selectedUrl) return createResultError("forgejoCliPullRequestRun", "Forgejo did not return a clone URL")
-    const environmentDefaults = forgejoEnvironmentDefaultsResolve({ env: options.env, cwd: invocation.cwd })
-    const url = ssh ? forgejoSshUrlApplyBase(selectedUrl, environmentDefaults.sshBase) : selectedUrl
+    const defaults = await forgejoDefaultsResolve({ env: options.env, cwd: invocation.cwd })
+    if (!defaults.success) return createResultError("forgejoCliPullRequestRun", defaults.errorMessage)
+    const url = ssh ? forgejoSshUrlApplyBase(selectedUrl, defaults.data.sshBase) : selectedUrl
     const fetchArgs = [
       "fetch",
       ...(ssh && invocation.identityFile

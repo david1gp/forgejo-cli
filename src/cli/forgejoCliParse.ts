@@ -5,6 +5,8 @@ import { forgejoCliCommandHierarchy } from "./forgejoCliCommandHierarchy.js"
 
 const forgejoCliStyleSchema = a.picklist(["fancy", "minimal"])
 type ForgejoCliStyle = a.InferOutput<typeof forgejoCliStyleSchema>
+const forgejoCliConfigKeySchema = a.picklist(["default-host", "ssh-base", "default-org", "default-remote"])
+type ForgejoCliConfigKey = a.InferOutput<typeof forgejoCliConfigKeySchema>
 
 type ForgejoCliParseOptions = {
   stdoutIsTty?: boolean
@@ -20,6 +22,8 @@ type ForgejoCliInvocation =
   | { kind: "version"; verbose: boolean; cwd?: string; style: ForgejoCliStyle }
   | { kind: "whoami"; host?: string; cwd?: string; remote?: string; style: ForgejoCliStyle; json?: true }
   | { kind: "completion"; shell: string; binName: string; cwd?: string; style: ForgejoCliStyle }
+  | ({ kind: "config-set"; key: ForgejoCliConfigKey; value: string } & ForgejoCliBaseInvocation)
+  | ({ kind: "config-unset"; key: ForgejoCliConfigKey } & ForgejoCliBaseInvocation)
   | {
       kind: "auth-add-token" | "auth-login"
       token?: string
@@ -35,18 +39,26 @@ type ForgejoCliInvocation =
       kind: "repo-create"
       name: string
       organization?: string
+      noOrg: boolean
       description?: string
       private: boolean
       remote?: string
       push: boolean
       ssh?: boolean
     } & ForgejoCliBaseInvocation)
-  | ({ kind: "repo-fork"; repository: string; name?: string; organization?: string } & ForgejoCliRepositoryInvocation)
+  | ({
+      kind: "repo-fork"
+      repository: string
+      name?: string
+      organization?: string
+      noOrg: boolean
+    } & ForgejoCliRepositoryInvocation)
   | ({
       kind: "repo-migrate"
       cloneAddr: string
       repoName: string
       repoOwner?: string
+      noOrg: boolean
       mirror: boolean
       private: boolean
       service?: string
@@ -1006,6 +1018,7 @@ export function forgejoCliParse(
     return createResult({ kind: "completion", shell: shell.toLowerCase(), binName, cwd: globals.data.cwd, style })
   }
 
+  if (command === "config") return forgejoCliConfigParse(args, globals.data, style)
   if (command === "auth") return forgejoCliAuthParse(args, globals.data.host, globals.data.cwd, style)
   if (command === "repo") return forgejoCliRepoParse(args, globals.data, style)
   if (command === "issue") return forgejoCliIssueParse(args, globals.data, style)
@@ -1017,6 +1030,57 @@ export function forgejoCliParse(
   if (command === "wiki") return forgejoCliWikiParse(args, globals.data, style)
   if (command === "actions") return forgejoCliActionsParse(args, globals.data, style)
   return forgejoCliArgumentError(`Command '${command}' is not implemented in this CLI slice`)
+}
+
+function forgejoCliConfigParse(
+  args: readonly string[],
+  globals: { host?: string; cwd?: string; json: boolean },
+  style: ForgejoCliStyle,
+): ForgejoResult<ForgejoCliInvocation> {
+  const [subcommand, ...subcommandArgs] = args
+  if (!subcommand || subcommand === "--help" || subcommand === "-h")
+    return createResult({ kind: "help", path: ["config"] })
+  if (subcommand !== "set" && subcommand !== "unset")
+    return forgejoCliArgumentError(`Unknown config command '${subcommand}'`)
+
+  const parsed = forgejoCliOptionsParse(subcommandArgs, [])
+  if (!parsed.success) return parsed
+  if (parsed.data.help) return createResult({ kind: "help", path: ["config", subcommand] })
+
+  const requiredArguments = subcommand === "set" ? "KEY VALUE" : "KEY"
+  const requiredArgumentCount = subcommand === "set" ? 2 : 1
+  if (parsed.data.positional.length !== requiredArgumentCount)
+    return forgejoCliArgumentError(`config ${subcommand} requires ${requiredArguments}`)
+
+  const key = parsed.data.positional[0]
+  if (key === undefined) return forgejoCliArgumentError(`config ${subcommand} requires ${requiredArguments}`)
+  const validKey = a.safeParse(forgejoCliConfigKeySchema, key)
+  if (!validKey.success) {
+    return forgejoCliArgumentError(
+      `Unsupported config key '${key}'. Expected default-host, ssh-base, default-org, or default-remote`,
+    )
+  }
+
+  if (subcommand === "set") {
+    const value = parsed.data.positional[1]
+    if (value === undefined) return forgejoCliArgumentError(`config ${subcommand} requires ${requiredArguments}`)
+    return createResult({
+      kind: "config-set",
+      key: validKey.output,
+      value,
+      host: globals.host,
+      cwd: globals.cwd,
+      ...forgejoCliOutputFields(globals.json, style),
+    })
+  }
+
+  return createResult({
+    kind: "config-unset",
+    key: validKey.output,
+    host: globals.host,
+    cwd: globals.cwd,
+    ...forgejoCliOutputFields(globals.json, style),
+  })
 }
 
 function forgejoCliAuthParse(
@@ -1126,6 +1190,7 @@ function forgejoCliRepoParse(
     const parsed = forgejoCliOptionsParse(subcommandArgs, [
       { name: "name", takesValue: true },
       { name: "organization", short: "o", takesValue: true },
+      { name: "no-org", takesValue: false },
       { name: "description", short: "d", takesValue: true },
       { name: "private", short: "P", takesValue: false },
       { name: "remote", short: "R", takesValue: true },
@@ -1135,13 +1200,18 @@ function forgejoCliRepoParse(
     ])
     if (!parsed.success) return parsed
     if (parsed.data.help) return createResult({ kind: "help", path: ["repo", "create"] })
+    const organization = forgejoCliString(parsed.data.values, "organization")
+    const noOrg = forgejoCliBoolean(parsed.data.values, "no-org")
+    if (noOrg && organization !== undefined)
+      return forgejoCliArgumentError("repo create --no-org cannot be used with --organization")
     if (parsed.data.positional.length > 1) return forgejoCliArgumentError("repo create accepts one repository name")
     const name = forgejoCliString(parsed.data.values, "name") ?? parsed.data.positional[0]
     if (!name) return forgejoCliArgumentError("repo create requires a repository name")
     return createResult({
       kind: "repo-create",
       name,
-      organization: forgejoCliString(parsed.data.values, "organization"),
+      organization,
+      noOrg,
       description: forgejoCliString(parsed.data.values, "description"),
       private: forgejoCliBoolean(parsed.data.values, "private"),
       remote: forgejoCliRemote(parsed.data.values),
@@ -1206,10 +1276,15 @@ function forgejoCliRepoForkParse(
     forgejoCliRepositoryDefinitions([
       { name: "name", takesValue: true },
       { name: "organization", short: "o", takesValue: true },
+      { name: "no-org", takesValue: false },
     ]),
   )
   if (!parsed.success) return parsed
   if (parsed.data.help) return createResult({ kind: "help", path: ["repo", "fork"] })
+  const organization = forgejoCliString(parsed.data.values, "organization")
+  const noOrg = forgejoCliBoolean(parsed.data.values, "no-org")
+  if (noOrg && organization !== undefined)
+    return forgejoCliArgumentError("repo fork --no-org cannot be used with --organization")
   const target = forgejoCliRepositoryTarget(parsed.data, parsed.data.positional, true)
   if (!target.success) return target
   if (target.data.rest.length > 0) return forgejoCliArgumentError("repo fork accepts one repository")
@@ -1217,7 +1292,8 @@ function forgejoCliRepoForkParse(
     kind: "repo-fork",
     repository: target.data.repository ?? "",
     name: forgejoCliString(parsed.data.values, "name"),
-    organization: forgejoCliString(parsed.data.values, "organization"),
+    organization,
+    noOrg,
     remote: forgejoCliRemote(parsed.data.values),
     ...base,
   })
@@ -1229,6 +1305,7 @@ function forgejoCliRepoMigrateParse(
 ): ForgejoResult<ForgejoCliInvocation> {
   const parsed = forgejoCliOptionsParse(args, [
     { name: "name", short: "n", takesValue: true },
+    { name: "no-org", takesValue: false },
     { name: "mirror", short: "m", takesValue: false },
     { name: "private", short: "P", takesValue: false },
     { name: "service", short: "s", takesValue: true },
@@ -1250,12 +1327,16 @@ function forgejoCliRepoMigrateParse(
   const destinationParts = destination.split("/")
   if (destinationParts.length !== 1 && destinationParts.length !== 2)
     return forgejoCliArgumentError("repo migrate destination must be [OWNER/]NAME")
+  const noOrg = forgejoCliBoolean(parsed.data.values, "no-org")
+  if (noOrg && destinationParts.length === 2)
+    return forgejoCliArgumentError("repo migrate --no-org cannot be used with an explicit destination owner")
   const include = forgejoCliString(parsed.data.values, "include")
   return createResult({
     kind: "repo-migrate",
     cloneAddr: parsed.data.positional[0] ?? "",
     ...(destinationParts.length === 2 ? { repoOwner: destinationParts[0] } : {}),
     repoName: destinationParts.length === 2 ? (destinationParts[1] ?? "") : (destinationParts[0] ?? ""),
+    noOrg,
     mirror: forgejoCliBoolean(parsed.data.values, "mirror"),
     private: forgejoCliBoolean(parsed.data.values, "private"),
     service: forgejoCliString(parsed.data.values, "service"),

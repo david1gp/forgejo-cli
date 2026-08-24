@@ -1,10 +1,19 @@
-import { expect, test } from "bun:test"
+import { afterEach, expect, test } from "bun:test"
+import { mkdtemp, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { createResult } from "#result"
-import type { ForgejoFetch } from "../src/http/forgejoRestTransportCreate.js"
 import { forgejoCliParse } from "../src/cli/forgejoCliParse.js"
 import { forgejoCliRun } from "../src/cli/forgejoCliRun.js"
+import type { ForgejoFetch } from "../src/http/forgejoRestTransportCreate.js"
+import { forgejoConfigurationSave } from "../src/index.js"
 
 const env = { FORGEJO_TOKEN: "test-token" }
+const temporaryDirectories: string[] = []
+
+afterEach(async () => {
+  await Promise.all(temporaryDirectories.splice(0).map((path) => rm(path, { recursive: true, force: true })))
+})
 
 function outputCapture() {
   const output: string[] = []
@@ -118,6 +127,40 @@ test("runs wiki view, clone, and browse with injectable process and browser effe
   expect(browse.success).toBe(true)
   expect(opened).toContain("/wiki/Home")
   expect(calls.some((url) => url.endsWith("/wiki/pages"))).toBe(true)
+})
+
+test("uses persisted ssh_base for wiki clones", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-wiki-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave(
+    { hosts: {}, ssh_base: "ssh://git@persisted.example.test:2222" },
+    { path: configurationPath },
+  )
+  const commands: string[][] = []
+  const result = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "wiki", "clone", "--repo", "owner/demo", "--ssh", "/tmp/wiki"],
+    {
+      env: { ...env, FORGEJO_CONFIG_FILE: configurationPath },
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            full_name: "owner/demo",
+            name: "demo",
+            clone_url: "https://forgejo.example.test/owner/demo.git",
+            ssh_url: "ssh://git@forgejo.example.test/owner/demo.git",
+          }),
+        ),
+      execute: async (input) => {
+        commands.push([...input.args])
+        return createResult("")
+      },
+      outputWrite: () => createResult(null),
+    },
+  )
+
+  expect(result.success).toBe(true)
+  expect(commands).toEqual([["clone", "ssh://git@persisted.example.test:2222/owner/demo.wiki.git", "/tmp/wiki"]])
 })
 
 test("runs Actions tasks, variables, secrets, deletes with confirmation, and dispatch", async () => {

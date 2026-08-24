@@ -1,8 +1,17 @@
-import { expect, test } from "bun:test"
+import { afterEach, expect, test } from "bun:test"
+import { mkdtemp, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import type { ForgejoProcessCommand } from "../src/index.js"
-import { forgejoRepositoryContextResolve } from "../src/index.js"
+import { forgejoConfigurationSave, forgejoRepositoryContextResolve } from "../src/index.js"
 
 type RemoteMap = Record<string, string>
+
+const temporaryDirectories: string[] = []
+
+afterEach(async () => {
+  await Promise.all(temporaryDirectories.splice(0).map((path) => rm(path, { recursive: true, force: true })))
+})
 
 function executeCreate(remotes: RemoteMap) {
   return async ({ args }: ForgejoProcessCommand) => {
@@ -68,7 +77,19 @@ test("selects a single remote and prefers upstream among multiple remotes", asyn
   expect(upstream.success && upstream.data.repository.name).toBe("project")
 })
 
-test("selects a remote matching an explicit or fallback host", async () => {
+test("rejects multiple remotes when no preferred or upstream remote is available", async () => {
+  const result = await forgejoRepositoryContextResolve({
+    execute: executeCreate({
+      origin: "https://forgejo.example.test/owner/origin.git",
+      mirror: "https://forgejo.example.test/owner/mirror.git",
+    }),
+  })
+
+  expect(result.success).toBe(false)
+  if (!result.success) expect(result.errorMessage).toContain("unique Forgejo Git remote")
+})
+
+test("selects a remote matching an explicit host and does not filter by fallback host", async () => {
   const explicitHost = await forgejoRepositoryContextResolve({
     host: "host-b.example.test",
     execute: executeCreate({
@@ -80,12 +101,9 @@ test("selects a remote matching an explicit or fallback host", async () => {
 
   const fallbackHost = await forgejoRepositoryContextResolve({
     env: { FJ_FALLBACK_HOST: "fallback.example.test" },
-    execute: executeCreate({
-      origin: "https://other.example.test/owner/wrong.git",
-      mirror: "https://fallback.example.test/owner/right.git",
-    }),
+    execute: executeCreate({ origin: "https://other.example.test/owner/usable.git" }),
   })
-  expect(fallbackHost.success && fallbackHost.data.host).toBe("fallback.example.test")
+  expect(fallbackHost.success && fallbackHost.data.host).toBe("other.example.test")
 })
 
 test("uses the environment host after explicit input and before Git discovery", async () => {
@@ -104,6 +122,18 @@ test("uses the environment host after explicit input and before Git discovery", 
     execute: executeCreate({ origin: "https://host-a.example.test/owner/explicit.git" }),
   })
   expect(explicitHost.success && explicitHost.data.repository.name).toBe("explicit")
+})
+
+test("treats a compatible force-host alias as authoritative over Git remotes", async () => {
+  const result = await forgejoRepositoryContextResolve({
+    env: { FORGEJO_HOST: "host-b.example.test" },
+    execute: executeCreate({
+      origin: "https://host-a.example.test/owner/wrong.git",
+      mirror: "https://host-b.example.test/owner/right.git",
+    }),
+  })
+
+  expect(result.success && result.data.repository.name).toBe("right")
 })
 
 test("keeps an explicit repository ahead of organization, remote, and directory defaults", async () => {
@@ -145,6 +175,35 @@ test("uses the preferred environment remote unless an explicit remote is provide
   expect(explicit.success && explicit.data.repository.name).toBe("origin")
 })
 
+test("uses the remote precedence explicit, environment, persisted, then automatic", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-context-"))
+  temporaryDirectories.push(directory)
+  const path = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_remote: "mirror" }, { path })
+  const execute = executeCreate({
+    origin: "https://forgejo.example.test/owner/origin.git",
+    mirror: "https://forgejo.example.test/owner/mirror.git",
+  })
+
+  const persisted = await forgejoRepositoryContextResolve({
+    env: { FORGEJO_CONFIG_FILE: path },
+    execute,
+  })
+  const environment = await forgejoRepositoryContextResolve({
+    env: { FORGEJO_CONFIG_FILE: path, FJ_REMOTE: "origin" },
+    execute,
+  })
+  const explicit = await forgejoRepositoryContextResolve({
+    remote: "mirror",
+    env: { FORGEJO_CONFIG_FILE: path, FJ_REMOTE: "origin" },
+    execute,
+  })
+
+  expect(persisted.success && persisted.data.repository.name).toBe("mirror")
+  expect(environment.success && environment.data.repository.name).toBe("origin")
+  expect(explicit.success && explicit.data.repository.name).toBe("mirror")
+})
+
 test("ignores blank environment host and remote defaults", async () => {
   const result = await forgejoRepositoryContextResolve({
     env: { FJ_HOST: "  ", FJ_REMOTE: "\t" },
@@ -169,6 +228,41 @@ test("falls back from a blank primary host to FJ_FALLBACK_HOST", async () => {
     host: "fallback.example.test",
     repository: { owner: "team", name: "current-repository" },
   })
+})
+
+test("uses a persisted host only after Git remote discovery is unavailable", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-context-"))
+  temporaryDirectories.push(directory)
+  const path = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_host: "persisted.example.test" }, { path })
+
+  const result = await forgejoRepositoryContextResolve({
+    repository: "owner/repository",
+    cwd: directory,
+    env: { FORGEJO_CONFIG_FILE: path },
+    execute: async () => ({ success: false as const, op: "test", errorMessage: "not a Git repository" }),
+  })
+
+  expect(result.success && result.data).toMatchObject({
+    baseUrl: "https://persisted.example.test/",
+    host: "persisted.example.test",
+    repository: { owner: "owner", name: "repository" },
+  })
+})
+
+test("lets a usable Git remote host defeat fallback and persisted hosts", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-context-"))
+  temporaryDirectories.push(directory)
+  const path = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_host: "persisted.example.test" }, { path })
+
+  const result = await forgejoRepositoryContextResolve({
+    cwd: directory,
+    env: { FORGEJO_CONFIG_FILE: path, FJ_FALLBACK_HOST: "fallback.example.test" },
+    execute: executeCreate({ origin: "https://remote.example.test/owner/repository.git" }),
+  })
+
+  expect(result.success && result.data.host).toBe("remote.example.test")
 })
 
 test("rejects a Git remote that conflicts with an environment-selected host", async () => {
@@ -209,6 +303,40 @@ test("uses the configured organization and current directory after Git discovery
       host: "forgejo.example.test",
       repository: { host: "forgejo.example.test", owner: "team", name: "current-repository" },
     },
+  })
+})
+
+test("uses persisted organization only after Git remote discovery", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-context-"))
+  temporaryDirectories.push(directory)
+  const path = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_org: "persisted-team" }, { path })
+  const environment = { FORGEJO_CONFIG_FILE: path, FJ_HOST: "forgejo.example.test" }
+
+  const remote = await forgejoRepositoryContextResolve({
+    cwd: directory,
+    env: environment,
+    execute: executeCreate({ origin: "https://forgejo.example.test/remote-owner/remote.git" }),
+  })
+  const persisted = await forgejoRepositoryContextResolve({
+    cwd: directory,
+    env: environment,
+    execute: async () => ({ success: false as const, op: "test", errorMessage: "not a Git repository" }),
+  })
+  const environmentOverride = await forgejoRepositoryContextResolve({
+    cwd: directory,
+    env: { ...environment, FJ_ORG: "environment-team" },
+    execute: async () => ({ success: false as const, op: "test", errorMessage: "not a Git repository" }),
+  })
+
+  expect(remote.success && remote.data.repository).toMatchObject({ owner: "remote-owner", name: "remote" })
+  expect(persisted.success && persisted.data.repository).toMatchObject({
+    owner: "persisted-team",
+    name: directory.split("/").at(-1),
+  })
+  expect(environmentOverride.success && environmentOverride.data.repository).toMatchObject({
+    owner: "environment-team",
+    name: directory.split("/").at(-1),
   })
 })
 

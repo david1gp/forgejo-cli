@@ -72,6 +72,7 @@ const forgejoCliCommandHierarchy: ForgejoCliCommand = {
           options: [
             { name: "name", value: "NAME", description: "Repository name; also accepted as the first argument." },
             { name: "organization", short: "o", value: "ORG", description: "Create in this organization." },
+            { name: "no-org", description: "Create in the authenticated user's personal namespace." },
             { name: "description", short: "d", value: "TEXT", description: "Repository description." },
             { name: "private", short: "P", description: "Create a private repository." },
             { name: "remote", short: "R", value: "REMOTE", description: "Add this Git remote after creation." },
@@ -85,6 +86,7 @@ const forgejoCliCommandHierarchy: ForgejoCliCommand = {
           options: [
             { name: "name", value: "NAME", description: "Name for the fork." },
             { name: "organization", short: "o", value: "ORG", description: "Organization receiving the fork." },
+            { name: "no-org", description: "Fork into the authenticated user's personal namespace." },
             ...forgejoCliRepositoryOptions.filter((option) => option.name === "remote"),
           ],
         },
@@ -92,6 +94,7 @@ const forgejoCliCommandHierarchy: ForgejoCliCommand = {
           description: "Migrate a repository from another Git service.",
           options: [
             { name: "name", value: "OWNER/NAME", description: "Destination repository name." },
+            { name: "no-org", description: "Migrate into the authenticated user's personal namespace." },
             { name: "mirror", short: "m", description: "Create a mirror." },
             { name: "private", short: "P", description: "Create a private repository." },
             { name: "service", short: "s", value: "SERVICE", description: "Source service." },
@@ -1103,6 +1106,19 @@ const forgejoCliCommandHierarchy: ForgejoCliCommand = {
         logout: { description: "Remove credentials for a host." },
         "use-ssh": { description: "Set whether a host prefers SSH for Git operations." },
         list: { description: "List hosts with stored credentials." },
+      },
+    },
+    config: {
+      description: "Manage persistent Forgejo defaults.",
+      commands: {
+        set: {
+          description:
+            "Set a persistent default with KEY VALUE. Supported keys: default-host, ssh-base, default-org, default-remote.",
+        },
+        unset: {
+          description:
+            "Unset a persistent default with KEY. Supported keys: default-host, ssh-base, default-org, default-remote.",
+        },
       },
     },
     completion: {

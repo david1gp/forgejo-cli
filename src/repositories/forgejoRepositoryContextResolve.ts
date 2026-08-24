@@ -1,6 +1,7 @@
 import { execFile as nodeExecFile } from "node:child_process"
 import { promisify } from "node:util"
 import { createResult, createResultError } from "#result"
+import { forgejoDefaultsResolve } from "../configuration/forgejoDefaultsResolve.js"
 import { forgejoEnvironmentDefaultsResolve } from "../configuration/forgejoEnvironmentDefaults.js"
 import type { ForgejoResult } from "../errors/forgejoResult.js"
 import { forgejoBaseUrlParse } from "../hosts/forgejoBaseUrlParse.js"
@@ -147,6 +148,8 @@ export async function forgejoRepositoryContextResolve(
   const env = options.env ?? process.env
   const execute = options.execute ?? forgejoProcessExecute
   const environmentDefaults = forgejoEnvironmentDefaultsResolve({ env, cwd: options.cwd })
+  const defaults = await forgejoDefaultsResolve({ env, cwd: options.cwd })
+  if (!defaults.success) return createResultError(op, defaults.errorMessage)
   const repository = options.repository === undefined ? undefined : forgejoRepositoryIdentifierParse(options.repository)
   if (repository && !repository.success) return createResultError(op, repository.errorMessage)
   const repositoryData = repository?.success ? repository.data : undefined
@@ -155,16 +158,11 @@ export async function forgejoRepositoryContextResolve(
 
   const explicitHost = options.host === undefined ? undefined : forgejoRepositoryContextBaseUrl(options.host)
   if (explicitHost && !explicitHost.success) return explicitHost
-  const environmentHost =
-    explicitHost || repositoryHost || !environmentDefaults.host
+  const forceHost =
+    explicitHost || repositoryHost || !defaults.data.host
       ? undefined
-      : forgejoRepositoryContextBaseUrl(environmentDefaults.host)
-  if (environmentHost && !environmentHost.success) return environmentHost
-  const fallbackHost =
-    explicitHost || environmentHost || !environmentDefaults.fallbackHost
-      ? undefined
-      : forgejoRepositoryContextBaseUrl(environmentDefaults.fallbackHost)
-  if (fallbackHost && !fallbackHost.success) return fallbackHost
+      : forgejoRepositoryContextBaseUrl(defaults.data.host)
+  if (forceHost && !forceHost.success) return forceHost
 
   const explicitRemote =
     options.remote === undefined ? undefined : await forgejoExplicitRemoteResolve(options.remote, options, execute)
@@ -174,24 +172,28 @@ export async function forgejoRepositoryContextResolve(
   let selectedRemote: { name?: string; remote: ForgejoRemote } | undefined = explicitRemote?.success
     ? { remote: explicitRemote.data }
     : undefined
-  const preferredRemoteName = options.remote === undefined ? environmentDefaults.remote : undefined
+  const preferredRemoteName = options.remote === undefined ? defaults.data.remote : undefined
   const hostHint = explicitHost?.success
     ? explicitHost.data.host
     : repositoryHost?.data.host
       ? repositoryHost.data.host
-      : environmentHost?.data.host
-        ? environmentHost.data.host
-        : fallbackHost?.data.host
+      : forceHost?.data.host
 
   if (explicitHost?.success && repositoryHost?.success && explicitHost.data.host !== repositoryHost.data.host)
     return createResultError(op, "Repository does not match the requested Forgejo host")
 
   const directoryRepositoryAvailable =
-    environmentDefaults.repository !== undefined && environmentDefaults.organization !== undefined
+    environmentDefaults.repository !== undefined && defaults.data.organization !== undefined
   if (!selectedRemote && (!repositoryData || hostHint === undefined)) {
     const remotes = await forgejoGitRemotesGet(options, execute)
     if (!remotes.success) {
-      if (!directoryRepositoryAvailable) return createResultError(op, "Unable to inspect the current Git repository")
+      if (
+        !directoryRepositoryAvailable &&
+        !repositoryData &&
+        defaults.data.fallbackHost === undefined &&
+        defaults.data.defaultHost === undefined
+      )
+        return createResultError(op, "Unable to inspect the current Git repository")
     } else {
       const selection = forgejoRemoteSelection(remotes.data, hostHint, preferredRemoteName)
       if (selection) selectedRemote = selection
@@ -206,25 +208,44 @@ export async function forgejoRepositoryContextResolve(
   let resolvedRepository = repositoryData
   if (!resolvedRepository && !selectedRemote && directoryRepositoryAvailable) {
     const directoryRepository = forgejoRepositoryIdentifierParse(
-      `${environmentDefaults.organization}/${environmentDefaults.repository}`,
+      `${defaults.data.organization}/${environmentDefaults.repository}`,
     )
     if (!directoryRepository.success) return createResultError(op, directoryRepository.errorMessage)
     resolvedRepository = directoryRepository.data
   }
 
   const resolvedHost = hostHint ?? (selectedRemote ? forgejoRemoteHost(selectedRemote.remote) : undefined)
-  if (!resolvedHost) return createResultError(op, "A Forgejo host or Git remote is required")
+  let fallbackHost: ForgejoResult<{ baseUrl: ForgejoBaseUrl; host: ForgejoHost }> | undefined
+  let defaultHost: ForgejoResult<{ baseUrl: ForgejoBaseUrl; host: ForgejoHost }> | undefined
+  if (!explicitHost && !repositoryHost && !forceHost && !selectedRemote) {
+    fallbackHost = defaults.data.fallbackHost ? forgejoRepositoryContextBaseUrl(defaults.data.fallbackHost) : undefined
+    if (fallbackHost && !fallbackHost.success) return fallbackHost
+    defaultHost =
+      !fallbackHost && defaults.data.defaultHost
+        ? forgejoRepositoryContextBaseUrl(defaults.data.defaultHost)
+        : undefined
+    if (defaultHost && !defaultHost.success) return defaultHost
+  }
+  const fallbackResolvedHost = fallbackHost?.success
+    ? fallbackHost.data.host
+    : defaultHost?.success
+      ? defaultHost.data.host
+      : undefined
+  const finalHost = resolvedHost ?? fallbackResolvedHost
+  if (!finalHost) return createResultError(op, "A Forgejo host or Git remote is required")
   const baseUrl = explicitHost?.success
     ? createResult(explicitHost.data)
     : repositoryHost?.success
       ? createResult(repositoryHost.data)
-      : selectedRemote
-        ? createResult({ baseUrl: selectedRemote.remote.baseUrl, host: resolvedHost })
-        : environmentHost?.success
-          ? createResult(environmentHost.data)
+      : forceHost?.success
+        ? createResult(forceHost.data)
+        : selectedRemote
+          ? createResult({ baseUrl: selectedRemote.remote.baseUrl, host: finalHost })
           : fallbackHost?.success
             ? createResult(fallbackHost.data)
-            : forgejoRepositoryContextBaseUrl(resolvedHost)
+            : defaultHost?.success
+              ? createResult(defaultHost.data)
+              : forgejoRepositoryContextBaseUrl(finalHost)
   if (!baseUrl.success) return baseUrl
   if (resolvedRepository) {
     return createResult({

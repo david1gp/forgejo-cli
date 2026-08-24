@@ -5,6 +5,8 @@ import { join } from "node:path"
 import {
   forgejoConfigurationLoad,
   forgejoConfigurationSave,
+  forgejoConfigurationDefaultsLoad,
+  forgejoConfigurationDefaultsUpdate,
   forgejoCredentialsAliasSet,
   forgejoCredentialsDefaultSshSet,
   forgejoCredentialsList,
@@ -32,6 +34,84 @@ test("saves and loads host-keyed tokens with owner-only permissions", async () =
 
   const loaded = await forgejoConfigurationLoad({ path })
   expect(loaded).toEqual({ success: true, data: configuration })
+})
+
+test("round-trips persistent defaults without dropping configuration metadata", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-"))
+  temporaryDirectories.push(directory)
+  const path = join(directory, "config.json")
+  const configuration = {
+    hosts: { "git.example.test": "secret-token" },
+    oauth_client_ids: { "git.example.test": "oauth-client" },
+    aliases: { "ssh.example.test": "git.example.test" },
+    default_ssh: ["git.example.test"],
+    default_host: "git.example.test",
+    ssh_base: "ssh://git@ssh.example.test:2222",
+    default_org: "team",
+    default_remote: "upstream",
+    future_setting: true,
+  }
+
+  const saved = await forgejoConfigurationSave(configuration, { path })
+  expect(saved).toEqual({ success: true, data: configuration })
+
+  const loaded = await forgejoConfigurationLoad({ path })
+  expect(loaded).toEqual({ success: true, data: configuration })
+
+  const defaults = await forgejoConfigurationDefaultsLoad({ path })
+  expect(defaults).toEqual({
+    success: true,
+    data: {
+      default_host: "git.example.test",
+      ssh_base: "ssh://git@ssh.example.test:2222",
+      default_org: "team",
+      default_remote: "upstream",
+    },
+  })
+
+  const updated = await forgejoConfigurationDefaultsUpdate("default_org", "other-team", { path })
+  expect(updated).toEqual({
+    success: true,
+    data: { ...configuration, default_org: "other-team" },
+  })
+  expect((await stat(path)).mode & 0o777).toBe(0o600)
+
+  expect(await forgejoCredentialsResolve("git.example.test", { configurationPath: path })).toEqual({
+    success: true,
+    data: "secret-token",
+  })
+})
+
+test("unsets a persistent default without changing unrelated configuration", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-"))
+  temporaryDirectories.push(directory)
+  const path = join(directory, "config.json")
+  const configuration = {
+    hosts: { "git.example.test": "secret-token" },
+    default_host: "git.example.test",
+    default_remote: "origin",
+  }
+
+  await forgejoConfigurationSave(configuration, { path })
+  const updated = await forgejoConfigurationDefaultsUpdate("default_host", undefined, { path })
+
+  expect(updated).toEqual({
+    success: true,
+    data: { hosts: configuration.hosts, default_remote: "origin" },
+  })
+})
+
+test("rejects unsupported and blank persistent default values", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-"))
+  temporaryDirectories.push(directory)
+  const path = join(directory, "config.json")
+
+  await forgejoConfigurationSave({ hosts: {} }, { path })
+  const unsupported = await forgejoConfigurationDefaultsUpdate("host", "git.example.test", { path })
+  const blank = await forgejoConfigurationDefaultsUpdate("default_org", "   ", { path })
+
+  expect(unsupported.success).toBe(false)
+  expect(blank.success).toBe(false)
 })
 
 test("prefers non-persisted host environment credentials over configuration", async () => {

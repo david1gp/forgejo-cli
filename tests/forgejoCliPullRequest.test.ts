@@ -1,7 +1,17 @@
-import { expect, test } from "bun:test"
+import { afterEach, expect, test } from "bun:test"
+import { mkdtemp, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { createResult } from "#result"
 import { forgejoCliParse } from "../src/cli/forgejoCliParse.js"
 import { forgejoCliRun } from "../src/cli/forgejoCliRun.js"
+import { forgejoConfigurationSave } from "../src/index.js"
+
+const temporaryDirectories: string[] = []
+
+afterEach(async () => {
+  await Promise.all(temporaryDirectories.splice(0).map((path) => rm(path, { recursive: true, force: true })))
+})
 
 test("preserves pull request N and ^N parent references", () => {
   const current = forgejoCliParse(["pr", "view", "owner/repo#7", "body"], { stdoutIsTty: false })
@@ -161,6 +171,43 @@ test("checks out a pull request with injected Git execution", async () => {
       "ssh://git@ssh.git.contentoren.de:2222/owner/repo.git",
       "pull/7/head",
     ],
+    ["checkout", "-B", "pr-owner-7", "FETCH_HEAD"],
+  ])
+})
+
+test("uses persisted ssh_base for pull request checkout", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-pr-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave(
+    { hosts: {}, ssh_base: "ssh://git@persisted.example.test:2222" },
+    { path: configurationPath },
+  )
+  const commands: string[][] = []
+  const result = await forgejoCliRun(
+    ["-H", "https://forgejo.example.test", "pr", "checkout", "owner/repo#7", "--ssh"],
+    {
+      env: { FORGEJO_TOKEN: "test-token", FORGEJO_CONFIG_FILE: configurationPath },
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            clone_url: "https://forgejo.example.test/owner/repo.git",
+            ssh_url: "git@forgejo.example.test:owner/repo.git",
+          }),
+          { status: 200 },
+        ),
+      execute: async (input) => {
+        commands.push([...input.args])
+        return createResult("")
+      },
+      outputWrite: () => createResult(null),
+    },
+  )
+
+  expect(result.success).toBe(true)
+  expect(commands).toEqual([
+    ["status", "--porcelain"],
+    ["fetch", "ssh://git@persisted.example.test:2222/owner/repo.git", "pull/7/head"],
     ["checkout", "-B", "pr-owner-7", "FETCH_HEAD"],
   ])
 })

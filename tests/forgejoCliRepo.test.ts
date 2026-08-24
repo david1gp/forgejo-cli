@@ -1,11 +1,19 @@
-import { expect, test } from "bun:test"
+import { afterEach, expect, test } from "bun:test"
+import { mkdtemp, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { createResult, createResultError } from "#result"
-import type { ForgejoFetch } from "../src/http/forgejoRestTransportCreate.js"
-import type { ForgejoProcessCommand } from "../src/index.js"
 import { forgejoCliParse } from "../src/cli/forgejoCliParse.js"
 import { forgejoCliRun } from "../src/cli/forgejoCliRun.js"
+import type { ForgejoFetch } from "../src/http/forgejoRestTransportCreate.js"
+import { type ForgejoProcessCommand, forgejoConfigurationSave } from "../src/index.js"
 
 const env = { FORGEJO_TOKEN: "test-token" }
+const temporaryDirectories: string[] = []
+
+afterEach(async () => {
+  await Promise.all(temporaryDirectories.splice(0).map((path) => rm(path, { recursive: true, force: true })))
+})
 
 function outputCapture() {
   const output: string[] = []
@@ -45,13 +53,22 @@ test("runs repo view through explicit repository and host context with JSON outp
 })
 
 test("resolves CLI host defaults in order and lets --host win", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-host-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_host: "persisted.example.test" }, { path: configurationPath })
   const requests: string[] = []
   const fetch: ForgejoFetch = async (input) => {
     requests.push(String(input))
     return new Response(JSON.stringify({ full_name: "owner/demo", name: "demo" }), { status: 200 })
   }
 
-  const environment = { ...env, FJ_HOST: "primary.example.test", FJ_FALLBACK_HOST: "fallback.example.test" }
+  const environment = {
+    ...env,
+    FORGEJO_CONFIG_FILE: configurationPath,
+    FJ_HOST: "primary.example.test",
+    FJ_FALLBACK_HOST: "fallback.example.test",
+  }
   const primary = await forgejoCliRun(["repo", "view", "owner/demo"], {
     env: environment,
     fetch,
@@ -65,20 +82,33 @@ test("resolves CLI host defaults in order and lets --host win", async () => {
   const fallback = await forgejoCliRun(["repo", "view", "owner/demo"], {
     env: { ...environment, FJ_HOST: "  " },
     fetch,
+    execute: async () => createResultError("test", "not a Git repository"),
+    outputWrite: outputCapture().outputWrite,
+  })
+  const persisted = await forgejoCliRun(["repo", "view", "owner/demo"], {
+    env: { ...environment, FJ_HOST: " ", FJ_FALLBACK_HOST: " " },
+    execute: async () => createResultError("test", "not a Git repository"),
+    fetch,
     outputWrite: outputCapture().outputWrite,
   })
 
   expect(primary.success).toBe(true)
   expect(explicit.success).toBe(true)
   expect(fallback.success).toBe(true)
+  expect(persisted.success).toBe(true)
   expect(requests).toEqual([
     "https://primary.example.test/api/v1/repos/owner/demo",
     "https://explicit.example.test/api/v1/repos/owner/demo",
     "https://fallback.example.test/api/v1/repos/owner/demo",
+    "https://persisted.example.test/api/v1/repos/owner/demo",
   ])
 })
 
 test("selects FJ_REMOTE in the CLI while an explicit --remote takes precedence", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-remote-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_remote: "mirror" }, { path: configurationPath })
   const requests: string[] = []
   const remotes: Record<string, string> = {
     origin: "https://forgejo.example.test/owner/origin.git",
@@ -94,40 +124,61 @@ test("selects FJ_REMOTE in the CLI while an explicit --remote takes precedence",
     return new Response(JSON.stringify({ full_name: "owner/repository", name: "repository" }), { status: 200 })
   }
 
-  const preferred = await forgejoCliRun(["repo", "view"], {
-    env: { ...env, FJ_REMOTE: "mirror" },
+  const persisted = await forgejoCliRun(["repo", "view"], {
+    env: { ...env, FORGEJO_CONFIG_FILE: configurationPath },
     execute,
     fetch,
     outputWrite: outputCapture().outputWrite,
   })
-  const explicit = await forgejoCliRun(["repo", "view", "--remote", "origin"], {
-    env: { ...env, FJ_REMOTE: "mirror" },
+  const environment = await forgejoCliRun(["repo", "view"], {
+    env: { ...env, FORGEJO_CONFIG_FILE: configurationPath, FJ_REMOTE: "origin" },
+    execute,
+    fetch,
+    outputWrite: outputCapture().outputWrite,
+  })
+  const explicit = await forgejoCliRun(["repo", "view", "--remote", "mirror"], {
+    env: { ...env, FORGEJO_CONFIG_FILE: configurationPath, FJ_REMOTE: "origin" },
     execute,
     fetch,
     outputWrite: outputCapture().outputWrite,
   })
 
-  expect(preferred.success).toBe(true)
+  expect(persisted.success).toBe(true)
+  expect(environment.success).toBe(true)
   expect(explicit.success).toBe(true)
   expect(requests).toEqual([
     "https://forgejo.example.test/api/v1/repos/owner/mirror",
     "https://forgejo.example.test/api/v1/repos/owner/origin",
+    "https://forgejo.example.test/api/v1/repos/owner/mirror",
   ])
 })
 
-test("uses FJ_ORG for omitted repository-owner targets and preserves explicit organization", async () => {
+test("uses organization precedence for omitted repository-owner targets", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-repo-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_org: "persisted-team" }, { path: configurationPath })
   const requests: string[] = []
   const fetch: ForgejoFetch = async (input) => {
     requests.push(String(input))
     return new Response(JSON.stringify({ name: "demo", full_name: "team/demo" }), { status: 201 })
   }
-  const environment = { ...env, FJ_ORG: "team" }
+  const persisted = { ...env, FORGEJO_CONFIG_FILE: configurationPath }
+  const environment = { ...persisted, FJ_ORG: "team" }
 
   const defaulted = await forgejoCliRun(["--host", "https://forgejo.example.test", "repo", "create", "demo"], {
-    env: environment,
+    env: persisted,
     fetch,
     outputWrite: outputCapture().outputWrite,
   })
+  const environmentDefaulted = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "create", "demo"],
+    {
+      env: environment,
+      fetch,
+      outputWrite: outputCapture().outputWrite,
+    },
+  )
   const explicit = await forgejoCliRun(
     ["--host", "https://forgejo.example.test", "repo", "create", "demo", "--organization", "explicit"],
     {
@@ -138,10 +189,219 @@ test("uses FJ_ORG for omitted repository-owner targets and preserves explicit or
   )
 
   expect(defaulted.success).toBe(true)
+  expect(environmentDefaulted.success).toBe(true)
   expect(explicit.success).toBe(true)
   expect(requests).toEqual([
+    "https://forgejo.example.test/api/v1/orgs/persisted-team/repos",
     "https://forgejo.example.test/api/v1/orgs/team/repos",
     "https://forgejo.example.test/api/v1/orgs/explicit/repos",
+  ])
+})
+
+test("uses the configured organization and current directory for an omitted CLI repository", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-cwd-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave(
+    { hosts: {}, default_host: "forgejo.example.test", default_org: "persisted-team" },
+    { path: configurationPath },
+  )
+  const requests: string[] = []
+  const previousDirectory = process.cwd()
+  try {
+    const result = await forgejoCliRun(["--cwd", directory, "repo", "view"], {
+      env: { ...env, FORGEJO_CONFIG_FILE: configurationPath },
+      execute: async () => createResultError("test", "not a Git repository"),
+      fetch: async (input) => {
+        requests.push(String(input))
+        return new Response(JSON.stringify({ full_name: `persisted-team/${directory.split("/").at(-1)}` }), {
+          status: 200,
+        })
+      },
+      outputWrite: outputCapture().outputWrite,
+      stdoutIsTty: false,
+    })
+
+    expect(result.success).toBe(true)
+  } finally {
+    process.chdir(previousDirectory)
+  }
+  expect(requests).toEqual([`https://forgejo.example.test/api/v1/repos/persisted-team/${directory.split("/").at(-1)}`])
+})
+
+test("uses organization precedence for repository forks and one-part migrations", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-repo-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_org: "persisted-team" }, { path: configurationPath })
+  const requests: { path: string; body: unknown }[] = []
+  const fetch: ForgejoFetch = async (input, init) => {
+    const url = new URL(String(input))
+    requests.push({ path: url.pathname, body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined })
+    return new Response(JSON.stringify({ name: "demo", full_name: "persisted-team/demo" }), { status: 201 })
+  }
+  const options = {
+    env: { ...env, FORGEJO_CONFIG_FILE: configurationPath },
+    fetch,
+    outputWrite: outputCapture().outputWrite,
+  }
+  const environmentOptions = { ...options, env: { ...options.env, FJ_ORG: "environment-team" } }
+
+  const forked = await forgejoCliRun(["--host", "https://forgejo.example.test", "repo", "fork", "source/demo"], options)
+  const migrated = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "migrate", "https://git.example.test/source/demo.git", "demo"],
+    options,
+  )
+  const environmentForked = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "fork", "source/demo"],
+    environmentOptions,
+  )
+  const environmentMigrated = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "migrate", "https://git.example.test/source/demo.git", "demo"],
+    environmentOptions,
+  )
+  const explicitForked = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "fork", "source/demo", "--organization", "explicit-team"],
+    environmentOptions,
+  )
+  const explicitMigrated = await forgejoCliRun(
+    [
+      "--host",
+      "https://forgejo.example.test",
+      "repo",
+      "migrate",
+      "https://git.example.test/source/demo.git",
+      "explicit-team/demo",
+    ],
+    environmentOptions,
+  )
+
+  expect(forked.success).toBe(true)
+  expect(migrated.success).toBe(true)
+  expect(environmentForked.success).toBe(true)
+  expect(environmentMigrated.success).toBe(true)
+  expect(explicitForked.success).toBe(true)
+  expect(explicitMigrated.success).toBe(true)
+  expect(requests).toEqual([
+    {
+      path: "/api/v1/repos/source/demo/forks",
+      body: { organization: "persisted-team" },
+    },
+    {
+      path: "/api/v1/repos/migrate",
+      body: {
+        clone_addr: "https://git.example.test/source/demo.git",
+        repo_name: "demo",
+        repo_owner: "persisted-team",
+        mirror: false,
+        private: false,
+      },
+    },
+    {
+      path: "/api/v1/repos/source/demo/forks",
+      body: { organization: "environment-team" },
+    },
+    {
+      path: "/api/v1/repos/migrate",
+      body: {
+        clone_addr: "https://git.example.test/source/demo.git",
+        repo_name: "demo",
+        repo_owner: "environment-team",
+        mirror: false,
+        private: false,
+      },
+    },
+    {
+      path: "/api/v1/repos/source/demo/forks",
+      body: { organization: "explicit-team" },
+    },
+    {
+      path: "/api/v1/repos/migrate",
+      body: {
+        clone_addr: "https://git.example.test/source/demo.git",
+        repo_name: "demo",
+        repo_owner: "explicit-team",
+        mirror: false,
+        private: false,
+      },
+    },
+  ])
+})
+
+test("uses authenticated personal namespaces when --no-org bypasses organization defaults", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-repo-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave(
+    { hosts: {}, default_org: "persisted-team", user: "persisted-user" },
+    { path: configurationPath },
+  )
+  const requests: { path: string; body: unknown; authorization: string | null }[] = []
+  const fetch: ForgejoFetch = async (input, init) => {
+    const url = new URL(String(input))
+    requests.push({
+      path: url.pathname,
+      body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
+      authorization: new Headers(init?.headers).get("Authorization"),
+    })
+    return new Response(JSON.stringify({ name: "demo", full_name: "alice/demo" }), { status: 201 })
+  }
+  const options = {
+    env: {
+      ...env,
+      FJ_ORG: "environment-team",
+      FJ_USER: "environment-target",
+      FORGEJO_CONFIG_FILE: configurationPath,
+    },
+    fetch,
+    outputWrite: outputCapture().outputWrite,
+  }
+
+  const created = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "create", "demo", "--no-org"],
+    options,
+  )
+  const forked = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "fork", "source/demo", "--no-org"],
+    options,
+  )
+  const migrated = await forgejoCliRun(
+    [
+      "--host",
+      "https://forgejo.example.test",
+      "repo",
+      "migrate",
+      "https://git.example.test/source/demo.git",
+      "demo",
+      "--no-org",
+    ],
+    options,
+  )
+
+  expect(created.success).toBe(true)
+  expect(forked.success).toBe(true)
+  expect(migrated.success).toBe(true)
+  expect(requests).toEqual([
+    {
+      path: "/api/v1/user/repos",
+      body: { name: "demo", private: false, auto_init: false, default_branch: "main", readme: "", template: false },
+      authorization: "token test-token",
+    },
+    {
+      path: "/api/v1/repos/source/demo/forks",
+      body: {},
+      authorization: "token test-token",
+    },
+    {
+      path: "/api/v1/repos/migrate",
+      body: {
+        clone_addr: "https://git.example.test/source/demo.git",
+        repo_name: "demo",
+        mirror: false,
+        private: false,
+      },
+      authorization: "token test-token",
+    },
   ])
 })
 
@@ -178,6 +438,146 @@ test("uses FJ_SSH_BASE for repository creation remotes", async () => {
   ])
 })
 
+test("uses persisted ssh_base for repository creation and clone remotes", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-repo-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave(
+    { hosts: {}, ssh_base: "ssh://git@persisted.example.test:2222" },
+    { path: configurationPath },
+  )
+  const commands: { command: string; args: readonly string[] }[] = []
+  const fetch: ForgejoFetch = async () =>
+    new Response(
+      JSON.stringify({
+        name: "demo",
+        full_name: "owner/demo",
+        clone_url: "https://forgejo.example.test/owner/demo.git",
+        ssh_url: "ssh://git@forgejo.example.test/owner/demo.git",
+        parent: {
+          clone_url: "https://forgejo.example.test/upstream/demo.git",
+          ssh_url: "ssh://git@forgejo.example.test/upstream/demo.git",
+        },
+      }),
+      { status: 200 },
+    )
+  const options = {
+    env: { ...env, FORGEJO_CONFIG_FILE: configurationPath },
+    fetch,
+    execute: async (input: ForgejoProcessCommand) => {
+      commands.push({ command: input.command, args: [...input.args] })
+      return createResult("")
+    },
+    outputWrite: outputCapture().outputWrite,
+  }
+
+  const created = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "create", "demo", "--remote", "origin", "--ssh"],
+    options,
+  )
+  const cloned = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "clone", "--ssh", "owner/demo", "/tmp/demo"],
+    options,
+  )
+
+  expect(created.success).toBe(true)
+  expect(cloned.success).toBe(true)
+  expect(commands).toEqual([
+    {
+      command: "git",
+      args: ["remote", "add", "origin", "ssh://git@persisted.example.test:2222/owner/demo.git"],
+    },
+    {
+      command: "git",
+      args: ["clone", "ssh://git@persisted.example.test:2222/owner/demo.git", "/tmp/demo"],
+    },
+    {
+      command: "git",
+      args: ["remote", "add", "upstream", "ssh://git@persisted.example.test:2222/upstream/demo.git"],
+    },
+  ])
+})
+
+test("resolves SSH clone URLs from FJ_SSH_BASE, persisted ssh_base, then the server URL", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-ssh-"))
+  temporaryDirectories.push(directory)
+  const persistedPath = join(directory, "persisted.json")
+  const serverPath = join(directory, "server.json")
+  await forgejoConfigurationSave(
+    { hosts: {}, ssh_base: "ssh://git@persisted.example.test:2222" },
+    { path: persistedPath },
+  )
+  await forgejoConfigurationSave({ hosts: {} }, { path: serverPath })
+
+  const commands: string[][] = []
+  const fetch: ForgejoFetch = async () =>
+    new Response(
+      JSON.stringify({
+        full_name: "owner/demo",
+        name: "demo",
+        clone_url: "https://forgejo.example.test/owner/demo.git",
+        ssh_url: "ssh://git@server.example.test:2222/owner/demo.git",
+      }),
+      { status: 200 },
+    )
+  const common = {
+    fetch,
+    execute: async (input: ForgejoProcessCommand) => {
+      commands.push([...input.args])
+      return createResult("")
+    },
+    outputWrite: outputCapture().outputWrite,
+  }
+
+  const explicit = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "clone", "--no-ssh", "owner/demo"],
+    {
+      ...common,
+      env: {
+        ...env,
+        FORGEJO_CONFIG_FILE: persistedPath,
+        FJ_SSH_BASE: "ssh://git@environment.example.test:2222",
+      },
+    },
+  )
+  const environment = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "clone", "--ssh", "owner/demo"],
+    {
+      ...common,
+      env: {
+        ...env,
+        FORGEJO_CONFIG_FILE: persistedPath,
+        FJ_SSH_BASE: "ssh://git@environment.example.test:2222",
+      },
+    },
+  )
+  const persisted = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "clone", "--ssh", "owner/demo"],
+    {
+      ...common,
+      env: { ...env, FORGEJO_CONFIG_FILE: persistedPath },
+    },
+  )
+  const server = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "clone", "--ssh", "owner/demo"],
+    {
+      ...common,
+      env: { ...env, FORGEJO_CONFIG_FILE: serverPath },
+    },
+  )
+
+  expect(explicit.success).toBe(true)
+  expect(environment.success).toBe(true)
+  expect(persisted.success).toBe(true)
+  expect(server.success).toBe(true)
+  expect(commands).toEqual([
+    ["clone", "https://forgejo.example.test/owner/demo.git", "./demo"],
+    ["clone", "ssh://git@environment.example.test:2222/owner/demo.git", "./demo"],
+    ["clone", "ssh://git@persisted.example.test:2222/owner/demo.git", "./demo"],
+    ["clone", "ssh://git@server.example.test:2222/owner/demo.git", "./demo"],
+  ])
+})
+
 test("keeps omitted repository targets available for runtime fallback resolution", () => {
   const view = forgejoCliParse(["repo", "view"], { stdoutIsTty: false })
   expect(view.success).toBe(true)
@@ -186,6 +586,35 @@ test("keeps omitted repository targets available for runtime fallback resolution
   const create = forgejoCliParse(["repo", "create", "demo"], { stdoutIsTty: false })
   expect(create.success).toBe(true)
   if (create.success) expect(create.data).toMatchObject({ kind: "repo-create", organization: undefined })
+})
+
+test("parses --no-org for repository create, fork, and one-part migrate", () => {
+  const create = forgejoCliParse(["repo", "create", "demo", "--no-org"], { stdoutIsTty: false })
+  const fork = forgejoCliParse(["repo", "fork", "source/demo", "--no-org"], { stdoutIsTty: false })
+  const migrate = forgejoCliParse(["repo", "migrate", "https://git.example.test/source/demo.git", "demo", "--no-org"], {
+    stdoutIsTty: false,
+  })
+
+  expect(create.success).toBe(true)
+  if (create.success) expect(create.data).toMatchObject({ kind: "repo-create", noOrg: true })
+  expect(fork.success).toBe(true)
+  if (fork.success) expect(fork.data).toMatchObject({ kind: "repo-fork", noOrg: true })
+  expect(migrate.success).toBe(true)
+  if (migrate.success) expect(migrate.data).toMatchObject({ kind: "repo-migrate", noOrg: true, repoName: "demo" })
+})
+
+test("rejects --no-org with an explicit organization or migrate destination owner", () => {
+  const conflicts = [
+    ["repo", "create", "demo", "--no-org", "--organization", "team"],
+    ["repo", "fork", "source/demo", "--no-org", "--organization", "team"],
+    ["repo", "migrate", "https://git.example.test/source/demo.git", "team/demo", "--no-org"],
+  ]
+
+  for (const args of conflicts) {
+    const parsed = forgejoCliParse(args, { stdoutIsTty: false })
+    expect(parsed.success).toBe(false)
+    if (!parsed.success) expect(parsed.errorMessage).toContain("--no-org cannot be used")
+  }
 })
 
 test("requires destructive confirmation in non-interactive mode and accepts --force", async () => {
