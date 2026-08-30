@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test"
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { ForgejoProcessCommand } from "../src/index.js"
@@ -30,6 +30,7 @@ test("resolves an explicit repository and host without inspecting Git", async ()
   const result = await forgejoRepositoryContextResolve({
     repository: "owner/repository",
     host: "https://forgejo.example.test/forgejo",
+    env: {},
     execute: async () => {
       throw new Error("Git should not be called")
     },
@@ -48,6 +49,7 @@ test("resolves an explicit repository and host without inspecting Git", async ()
 test("resolves an explicit remote URL and remote name", async () => {
   const explicit = await forgejoRepositoryContextResolve({
     remote: "https://forgejo.example.test/owner/repository.git",
+    env: {},
   })
   expect(explicit.success && explicit.data.repository).toEqual({
     host: "forgejo.example.test",
@@ -57,6 +59,7 @@ test("resolves an explicit remote URL and remote name", async () => {
 
   const named = await forgejoRepositoryContextResolve({
     remote: "origin",
+    env: {},
     execute: executeCreate({ origin: "ssh://git@forgejo.example.test/owner/repository.git" }),
   })
   expect(named.success && named.data.remote?.repository).toEqual({ owner: "owner", name: "repository" })
@@ -64,11 +67,13 @@ test("resolves an explicit remote URL and remote name", async () => {
 
 test("selects a single remote and prefers upstream among multiple remotes", async () => {
   const single = await forgejoRepositoryContextResolve({
+    env: {},
     execute: executeCreate({ origin: "https://forgejo.example.test/owner/single.git" }),
   })
   expect(single.success && single.data.repository.name).toBe("single")
 
   const upstream = await forgejoRepositoryContextResolve({
+    env: {},
     execute: executeCreate({
       origin: "https://forgejo.example.test/owner/fork.git",
       upstream: "https://forgejo.example.test/owner/project.git",
@@ -79,6 +84,7 @@ test("selects a single remote and prefers upstream among multiple remotes", asyn
 
 test("rejects multiple remotes when no preferred or upstream remote is available", async () => {
   const result = await forgejoRepositoryContextResolve({
+    env: {},
     execute: executeCreate({
       origin: "https://forgejo.example.test/owner/origin.git",
       mirror: "https://forgejo.example.test/owner/mirror.git",
@@ -92,6 +98,7 @@ test("rejects multiple remotes when no preferred or upstream remote is available
 test("selects a remote matching an explicit host and does not filter by fallback host", async () => {
   const explicitHost = await forgejoRepositoryContextResolve({
     host: "host-b.example.test",
+    env: {},
     execute: executeCreate({
       origin: "https://host-a.example.test/owner/wrong.git",
       mirror: "https://host-b.example.test/owner/right.git",
@@ -338,6 +345,43 @@ test("uses persisted organization only after Git remote discovery", async () => 
     owner: "environment-team",
     name: directory.split("/").at(-1),
   })
+})
+
+test("keeps a usable Git remote authoritative over a directory organization assignment", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-directory-context-"))
+  temporaryDirectories.push(directory)
+  const path = join(directory, "config.json")
+  await forgejoConfigurationSave(
+    {
+      hosts: {},
+      directory_assignments: { "/work": "directory-team" },
+    },
+    { path },
+  )
+
+  const result = await forgejoRepositoryContextResolve({
+    cwd: "/work/current-repository",
+    env: { FORGEJO_CONFIG_FILE: path },
+    execute: executeCreate({ origin: "https://forgejo.example.test/remote-owner/remote.git" }),
+  })
+
+  expect(result.success && result.data.repository).toMatchObject({ owner: "remote-owner", name: "remote" })
+})
+
+test("keeps a usable Git remote authoritative over discovered dotenv organization defaults", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-env-context-"))
+  temporaryDirectories.push(directory)
+  const path = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_org: "persisted-team" }, { path })
+  await writeFile(join(directory, ".env"), "FJ_HOST=forgejo.example.test\nFJ_ORG=dotenv-team\n")
+
+  const result = await forgejoRepositoryContextResolve({
+    cwd: directory,
+    env: { FORGEJO_CONFIG_FILE: path },
+    execute: executeCreate({ origin: "https://forgejo.example.test/remote-owner/remote.git" }),
+  })
+
+  expect(result.success && result.data.repository).toMatchObject({ owner: "remote-owner", name: "remote" })
 })
 
 test("prefers a usable Git remote over the current directory fallback", async () => {

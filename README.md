@@ -97,6 +97,25 @@ Use `fj config unset KEY` to remove any of `default-host`, `ssh-base`, `default-
 `fj auth login` (or token authentication) remain separate setup; authenticated identity comes from the Forgejo API
 credentials, not from an SSH key or `FJ_USER`.
 
+## Directory organization assignments
+
+Add the optional `directory_assignments` property to the JSON configuration file for organization defaults that follow
+the working directory:
+
+```json
+{
+  "directory_assignments": {
+    "/home/david/personal": null,
+    "/home/david/leo": "contentoren"
+  }
+}
+```
+
+Assignment keys must be absolute paths; `~` is not expanded. A non-empty string selects that Forgejo organization, while
+`null` selects the authenticated user's personal namespace. The nearest matching ancestor wins, so more-specific
+directory assignments take precedence over broader ones. Add this property alongside existing configuration values;
+the `config set` command does not replace it.
+
 ## Environment defaults
 
 The CLI also accepts shell-configurable overrides for common repository and identity inputs:
@@ -108,13 +127,47 @@ The CLI also accepts shell-configurable overrides for common repository and iden
   identity. `FJ_ORG` is the default repository owner. They are separate defaults and are not interchangeable.
 - `FJ_REMOTE` is the preferred named Git remote when `--remote` is absent.
 
-Precedence is command-specific: explicit host, then `FJ_HOST` (or the compatible `FORGEJO_BASE_URL`, `FORGEJO_URL`, or
-`FORGEJO_HOST` aliases), the selected Git remote's host, `FJ_FALLBACK_HOST`, and persisted `default-host`; explicit
-remote, `FJ_REMOTE`, persisted `default-remote`, and automatic remote selection; and explicit repository, a usable Git
-remote, then the owner default plus `basename(cwd)`. For organization destinations, explicit owner/organization wins,
-then `--no-org` selects the authenticated user's personal namespace, followed by `FJ_ORG` and persisted `default-org`.
-SSH URL construction uses an explicit URL, `FJ_SSH_BASE`, persisted `ssh-base`, then the server-provided URL. Blank
-environment values are ignored.
+The nearest `.env` is discovered by walking upward from the effective working directory; only the following Forgejo
+variables are read from it, and unrelated values are ignored:
+
+Set only the values needed; the four host names are compatible alternatives, not a required set.
+
+```dotenv
+FJ_HOST=https://forgejo.example.test
+FORGEJO_BASE_URL=https://forgejo.example.test
+FORGEJO_URL=https://forgejo.example.test
+FORGEJO_HOST=forgejo.example.test
+FJ_FALLBACK_HOST=https://forgejo.example.test
+FJ_SSH_BASE=ssh://git@ssh.git.contentoren.de:2222
+FJ_USER=david
+FJ_ORG=contentoren
+FJ_REMOTE=origin
+FJ_NO_ORG=true
+```
+
+`FJ_NO_ORG` accepts case-insensitive `true` or `false`; `true` selects the personal namespace. Process environment
+values override values for the same variable in the nearest `.env`. In general, precedence is explicit CLI options,
+Forgejo environment values (process environment, then `.env`), the nearest directory assignment, and persisted global
+defaults. For organization destinations, explicit owner/organization or `--no-org` wins, then `FJ_NO_ORG`/`FJ_ORG`,
+the directory assignment, and persisted `default-org`. `FJ_NO_ORG=false` allows a `null` directory assignment to fall
+through to the persisted organization. Blank environment values and invalid `FJ_NO_ORG` values are ignored.
+
+Command-specific Git behavior remains authoritative: a usable Git remote continues to identify the repository in a
+checked-out repository. Host resolution uses explicit host, `FJ_HOST` (or the compatible `FORGEJO_BASE_URL`,
+`FORGEJO_URL`, or `FORGEJO_HOST` aliases), the selected Git remote's host, `FJ_FALLBACK_HOST`, and persisted
+`default-host`; remote resolution uses explicit remote, `FJ_REMOTE`, persisted `default-remote`, and automatic remote
+selection. SSH URL construction uses an explicit URL, `FJ_SSH_BASE`, persisted `ssh-base`, then the server-provided
+URL. If no explicit repository or usable Git remote identifies a repository, the CLI falls back to `basename(cwd)`.
+
+Inspect the effective values, selected paths, and provenance with:
+
+```sh
+fj config show --resolved
+fj config show --resolved --json
+```
+
+The output identifies `cli`, `environment`, `.env`, `directory`, `persisted`, or `none` as sources. Credentials and
+unrelated `.env` values are never shown.
 
 `--no-org` bypasses organization defaults for personal repository operations:
 

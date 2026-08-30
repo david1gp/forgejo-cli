@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test"
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { forgejoCliCompletionGenerate } from "../src/cli/forgejoCliCompletionGenerate.js"
@@ -134,7 +134,9 @@ test("renders config help and rejects invalid config arguments with parser error
   const configHelp = forgejoCliHelpRender(["config"])
   expect(configHelp).toContain("set")
   expect(configHelp).toContain("unset")
+  expect(configHelp).toContain("show")
   for (const key of ["default-host", "ssh-base", "default-org", "default-remote"]) expect(configHelp).toContain(key)
+  expect(forgejoCliHelpRender(["config", "show"])).toContain("--resolved")
 
   expect(forgejoCliParse(["config", "set", "--help"], { stdoutIsTty: false })).toEqual({
     success: true,
@@ -157,6 +159,250 @@ test("renders config help and rejects invalid config arguments with parser error
   const invalidKey = forgejoCliParse(["config", "set", "host", "value"])
   expect(invalidKey.success).toBe(false)
   if (!invalidKey.success) expect(invalidKey.errorMessage).toContain("Unsupported config key 'host'")
+})
+
+test("parses resolved config show options in either order", () => {
+  expect(forgejoCliParse(["config", "show", "--resolved"], { stdoutIsTty: false })).toEqual({
+    success: true,
+    data: {
+      kind: "config-show",
+      resolved: true,
+      host: undefined,
+      cwd: undefined,
+      style: "minimal",
+    },
+  })
+  expect(forgejoCliParse(["config", "show", "--json", "--resolved"], { stdoutIsTty: false })).toEqual({
+    success: true,
+    data: {
+      kind: "config-show",
+      resolved: true,
+      host: undefined,
+      cwd: undefined,
+      style: "minimal",
+      json: true,
+    },
+  })
+  const unresolved = forgejoCliParse(["config", "show"], { stdoutIsTty: false })
+  expect(unresolved.success).toBe(false)
+  if (!unresolved.success) expect(unresolved.errorMessage).toContain("requires --resolved")
+})
+
+test("shows resolved config paths, sources, and only safe values", async () => {
+  const root = await mkdtemp(join(tmpdir(), "forgejo-cli-resolved-"))
+  temporaryDirectories.push(root)
+  const cwd = join(root, "project")
+  const configurationPath = join(root, "config.json")
+  await mkdir(cwd, { recursive: true })
+  await writeFile(
+    join(root, ".env"),
+    ["FJ_HOST=dotenv.example.test", "FJ_REMOTE=dotenv-remote", "UNRELATED_SECRET=dotenv-secret"].join("\n"),
+  )
+  await forgejoConfigurationSave(
+    {
+      hosts: {
+        "stored.example.test": "stored-token",
+        "oauth.example.test": { type: "OAuth", token: "oauth-access", refresh_token: "oauth-refresh" },
+      },
+      oauth_client_ids: { "stored.example.test": "oauth-client" },
+      default_host: "persisted.example.test",
+      ssh_base: "ssh://persisted-user:persisted-secret@persisted.example.test:2222",
+      default_org: "persisted-team",
+      default_remote: "persisted-remote",
+      directory_assignments: { [root]: "directory-team" },
+    },
+    { path: configurationPath },
+  )
+
+  const output: string[] = []
+  const previousDirectory = process.cwd()
+  try {
+    const result = await forgejoCliRun(["--cwd", cwd, "config", "show", "--resolved", "--json"], {
+      env: {
+        FORGEJO_CONFIG_FILE: configurationPath,
+        FJ_HOST: "process.example.test",
+        FJ_ORG: "process-team",
+      },
+      execute: async ({ args }) => {
+        if (args[0] === "remote" && args.length === 1) return { success: true as const, data: "origin" }
+        if (args[0] === "remote" && args[2] === "origin")
+          return { success: true as const, data: "https://process.example.test/remote-owner/repository.git" }
+        return { success: false as const, op: "test", errorMessage: "missing remote" }
+      },
+      outputWrite: (value) => {
+        output.push(value)
+        return { success: true, data: null }
+      },
+      stdoutIsTty: false,
+    })
+    expect(result).toEqual({ success: true, data: 0 })
+  } finally {
+    process.chdir(previousDirectory)
+  }
+
+  const rendered = output.join("")
+  const value = JSON.parse(rendered)
+  expect(value).toEqual({
+    cwd,
+    configurationPath,
+    environmentFilePath: join(root, ".env"),
+    directoryAssignment: { path: root, value: "directory-team" },
+    defaults: {
+      host: { value: "process.example.test", source: "environment" },
+      sshBase: { value: "ssh://redacted:redacted@persisted.example.test:2222", source: "persisted" },
+      organization: { value: "process-team", personal: false, source: "environment" },
+      remote: { value: "origin", source: "git" },
+    },
+  })
+  expect(rendered).not.toContain("stored-token")
+  expect(rendered).not.toContain("oauth-access")
+  expect(rendered).not.toContain("oauth-refresh")
+  expect(rendered).not.toContain("oauth-client")
+  expect(rendered).not.toContain("dotenv-secret")
+})
+
+test("redacts URL userinfo from host and SSH base values in JSON resolved output", async () => {
+  const root = await mkdtemp(join(tmpdir(), "forgejo-cli-resolved-json-redaction-"))
+  temporaryDirectories.push(root)
+  const cwd = join(root, "project")
+  const configurationPath = join(root, "config.json")
+  await mkdir(cwd, { recursive: true })
+  await forgejoConfigurationSave({ hosts: {}, default_host: "persisted.example.test" }, { path: configurationPath })
+
+  const output: string[] = []
+  const previousDirectory = process.cwd()
+  let result: Awaited<ReturnType<typeof forgejoCliRun>>
+  try {
+    result = await forgejoCliRun(["--cwd", cwd, "config", "show", "--resolved", "--json"], {
+      env: {
+        FORGEJO_CONFIG_FILE: configurationPath,
+        FJ_HOST: "https://host-user:host-secret@example.test",
+        FJ_SSH_BASE: "ssh://ssh-user@example.test:2222",
+      },
+      execute: async () => ({ success: false as const, op: "test", errorMessage: "not a Git repository" }),
+      outputWrite: (value) => {
+        output.push(value)
+        return { success: true, data: null }
+      },
+      stdoutIsTty: false,
+    })
+  } finally {
+    process.chdir(previousDirectory)
+  }
+
+  expect(result).toEqual({ success: true, data: 0 })
+  expect(JSON.parse(output.join(""))).toMatchObject({
+    defaults: {
+      host: { value: "https://redacted:redacted@example.test/", source: "environment" },
+      sshBase: { value: "ssh://redacted@example.test:2222", source: "environment" },
+    },
+  })
+  expect(output.join("")).not.toContain("host-user")
+  expect(output.join("")).not.toContain("host-secret")
+  expect(output.join("")).not.toContain("ssh-user")
+})
+
+test("redacts URL userinfo from host and SSH base values in human resolved output", async () => {
+  const root = await mkdtemp(join(tmpdir(), "forgejo-cli-resolved-ssh-"))
+  temporaryDirectories.push(root)
+  const cwd = join(root, "project")
+  const configurationPath = join(root, "config.json")
+  await mkdir(cwd, { recursive: true })
+  await forgejoConfigurationSave(
+    {
+      hosts: {},
+      default_host: "forgejo.example.test",
+      ssh_base: "ssh://persisted-user:persisted-secret@persisted.example.test:2222",
+    },
+    { path: configurationPath },
+  )
+  await writeFile(join(root, ".env"), 'FJ_SSH_BASE="ssh://dotenv-user:dotenv-secret@dotenv.example.test:2222"\n')
+
+  const output: string[] = []
+  const previousDirectory = process.cwd()
+  let result: Awaited<ReturnType<typeof forgejoCliRun>>
+  try {
+    result = await forgejoCliRun(["--cwd", cwd, "config", "show", "--resolved"], {
+      env: {
+        FORGEJO_CONFIG_FILE: configurationPath,
+        FJ_HOST: "https://environment-user:environment-secret@environment.example.test",
+        FJ_SSH_BASE: "ssh://environment-user@environment.example.test:2222",
+      },
+      outputWrite: (value) => {
+        output.push(value)
+        return { success: true, data: null }
+      },
+      stdoutIsTty: false,
+    })
+  } finally {
+    process.chdir(previousDirectory)
+  }
+
+  expect(result).toEqual({ success: true, data: 0 })
+  const rendered = output.join("")
+  expect(rendered).toContain("host: https://redacted:redacted@environment.example.test/ [environment]")
+  expect(rendered).toContain("ssh base: ssh://redacted@environment.example.test:2222 [environment]")
+  expect(rendered).not.toContain("environment-user")
+  expect(rendered).not.toContain("environment-secret")
+  expect(rendered).not.toContain("persisted-user")
+  expect(rendered).not.toContain("persisted-secret")
+  expect(rendered).not.toContain("dotenv-user")
+  expect(rendered).not.toContain("dotenv-secret")
+})
+
+test("renders resolved config in human output with the personal namespace", async () => {
+  const root = await mkdtemp(join(tmpdir(), "forgejo-cli-resolved-human-"))
+  temporaryDirectories.push(root)
+  const cwd = join(root, "project")
+  const configurationPath = join(root, "config.json")
+  await mkdir(cwd, { recursive: true })
+  await forgejoConfigurationSave(
+    {
+      hosts: {
+        "stored.example.test": "stored-token",
+        "oauth.example.test": { type: "OAuth", token: "oauth-access", refresh_token: "oauth-refresh" },
+      },
+      default_host: "persisted.example.test",
+      ssh_base: "ssh://git@persisted.example.test:2222",
+      default_org: "persisted-team",
+      default_remote: "persisted-remote",
+      directory_assignments: { [root]: null },
+    },
+    { path: configurationPath },
+  )
+
+  const output: string[] = []
+  const previousDirectory = process.cwd()
+  try {
+    const result = await forgejoCliRun(["--cwd", cwd, "config", "show", "--resolved"], {
+      env: { FORGEJO_CONFIG_FILE: configurationPath },
+      outputWrite: (value) => {
+        output.push(value)
+        return { success: true, data: null }
+      },
+      stdoutIsTty: false,
+    })
+    expect(result).toEqual({ success: true, data: 0 })
+  } finally {
+    process.chdir(previousDirectory)
+  }
+
+  expect(output.join("")).toBe(
+    [
+      `cwd: ${cwd}`,
+      `configuration path: ${configurationPath}`,
+      ".env path: none",
+      `directory assignment: ${root} = personal`,
+      "host: persisted.example.test [persisted]",
+      "ssh base: ssh://redacted@persisted.example.test:2222 [persisted]",
+      "organization: personal [directory]",
+      "remote: persisted-remote [persisted]",
+      "",
+    ].join("\n"),
+  )
+  expect(output.join("")).not.toContain("stored-token")
+  expect(output.join("")).not.toContain("oauth-access")
+  expect(output.join("")).not.toContain("oauth-refresh")
 })
 
 test("runs config set and unset for every supported key while preserving unrelated configuration", async () => {

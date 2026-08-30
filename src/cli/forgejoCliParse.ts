@@ -24,6 +24,7 @@ type ForgejoCliInvocation =
   | { kind: "completion"; shell: string; binName: string; cwd?: string; style: ForgejoCliStyle }
   | ({ kind: "config-set"; key: ForgejoCliConfigKey; value: string } & ForgejoCliBaseInvocation)
   | ({ kind: "config-unset"; key: ForgejoCliConfigKey } & ForgejoCliBaseInvocation)
+  | ({ kind: "config-show"; resolved: true } & ForgejoCliBaseInvocation)
   | {
       kind: "auth-add-token" | "auth-login"
       token?: string
@@ -1040,6 +1041,22 @@ function forgejoCliConfigParse(
   const [subcommand, ...subcommandArgs] = args
   if (!subcommand || subcommand === "--help" || subcommand === "-h")
     return createResult({ kind: "help", path: ["config"] })
+  if (subcommand === "show") {
+    const parsed = forgejoCliOptionsParse(subcommandArgs, [{ name: "resolved", takesValue: false, booleanValue: true }])
+    if (!parsed.success) return parsed
+    if (parsed.data.help) return createResult({ kind: "help", path: ["config", "show"] })
+    if (!forgejoCliBoolean(parsed.data.values, "resolved"))
+      return forgejoCliArgumentError("config show requires --resolved")
+    if (parsed.data.positional.length > 0)
+      return forgejoCliArgumentError("config show does not accept positional arguments")
+    return createResult({
+      kind: "config-show",
+      resolved: true,
+      host: globals.host,
+      cwd: globals.cwd,
+      ...forgejoCliOutputFields(globals.json, style),
+    })
+  }
   if (subcommand !== "set" && subcommand !== "unset")
     return forgejoCliArgumentError(`Unknown config command '${subcommand}'`)
 

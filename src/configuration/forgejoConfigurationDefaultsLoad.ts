@@ -16,6 +16,8 @@ export async function forgejoConfigurationDefaultsLoad(
   if (loaded.data.ssh_base !== undefined) defaults.ssh_base = loaded.data.ssh_base
   if (loaded.data.default_org !== undefined) defaults.default_org = loaded.data.default_org
   if (loaded.data.default_remote !== undefined) defaults.default_remote = loaded.data.default_remote
+  if (loaded.data.directory_assignments !== undefined)
+    defaults.directory_assignments = loaded.data.directory_assignments
   return createResult(defaults)
 }
 

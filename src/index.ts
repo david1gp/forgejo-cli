@@ -17,8 +17,40 @@ export type {
   ForgejoEnvironmentDefaults,
   ForgejoEnvironmentDefaultsResolveOptions,
 } from "./configuration/forgejoEnvironmentDefaults.js"
+export { forgejoEnvironmentDefaultsLoad } from "./configuration/forgejoEnvironmentDefaultsLoad.js"
+export type { ForgejoEnvironmentDefaultsLoadOptions } from "./configuration/forgejoEnvironmentDefaultsLoad.js"
+export { forgejoEnvironmentFileParse } from "./configuration/forgejoEnvironmentFileParse.js"
+export { forgejoEnvironmentFileResolve } from "./configuration/forgejoEnvironmentFileResolve.js"
+export type { ForgejoEnvironmentFileResolveOptions } from "./configuration/forgejoEnvironmentFileResolve.js"
+export { forgejoEnvironmentFileLoad } from "./configuration/forgejoEnvironmentFileLoad.js"
+export type {
+  ForgejoEnvironmentFile,
+  ForgejoEnvironmentFileLoadOptions,
+} from "./configuration/forgejoEnvironmentFileLoad.js"
 export { forgejoDefaultsResolve } from "./configuration/forgejoDefaultsResolve.js"
 export type { ForgejoDefaults, ForgejoDefaultsResolveOptions } from "./configuration/forgejoDefaultsResolve.js"
+export { forgejoDirectoryAssignmentResolve } from "./configuration/forgejoDirectoryAssignmentResolve.js"
+export type {
+  ForgejoDirectoryAssignmentResolution,
+  ForgejoDirectoryAssignmentResolveOptions,
+} from "./configuration/forgejoDirectoryAssignmentResolve.js"
+export { forgejoDirectoryAssignmentMatchResolve } from "./configuration/forgejoDirectoryAssignmentMatchResolve.js"
+export type {
+  ForgejoDirectoryAssignmentMatch,
+  ForgejoDirectoryAssignmentMatchResolveOptions,
+} from "./configuration/forgejoDirectoryAssignmentMatchResolve.js"
+export { forgejoResolvedConfigurationResolve } from "./configuration/forgejoResolvedConfigurationResolve.js"
+export type {
+  ForgejoResolvedConfiguration,
+  ForgejoResolvedConfigurationResolveOptions,
+  ForgejoResolvedConfigurationSource,
+  ForgejoResolvedConfigurationValue,
+} from "./configuration/forgejoResolvedConfigurationResolve.js"
+export {
+  forgejoDirectoryAssignmentSchema,
+  type ForgejoDirectoryAssignment,
+  type ForgejoDirectoryAssignments,
+} from "./configuration/forgejoDirectoryAssignmentSchema.js"
 export { forgejoConfigurationParse } from "./configuration/forgejoConfigurationParse.js"
 export { forgejoConfigurationPathResolve } from "./configuration/forgejoConfigurationPathResolve.js"
 export type { ForgejoConfigurationPathResolveOptions } from "./configuration/forgejoConfigurationPathResolve.js"

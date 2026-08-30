@@ -1119,6 +1119,10 @@ const forgejoCliCommandHierarchy: ForgejoCliCommand = {
           description:
             "Unset a persistent default with KEY. Supported keys: default-host, ssh-base, default-org, default-remote.",
         },
+        show: {
+          description: "Show resolved defaults and their sources. Requires --resolved.",
+          options: [{ name: "resolved", description: "Show effective values, paths, and sources." }],
+        },
       },
     },
     completion: {

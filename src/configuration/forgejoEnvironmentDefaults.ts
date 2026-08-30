@@ -8,6 +8,7 @@ type ForgejoEnvironmentDefaults = {
   organization?: string
   remote?: string
   repository?: string
+  noOrg?: boolean
 }
 
 type ForgejoEnvironmentDefaultsResolveOptions = {
@@ -26,6 +27,16 @@ function forgejoEnvironmentDefaultValue(
   return undefined
 }
 
+function forgejoEnvironmentDefaultBooleanValue(
+  env: Record<string, string | undefined>,
+  name: string,
+): boolean | undefined {
+  const value = env[name]?.trim().toLowerCase()
+  if (value === "true") return true
+  if (value === "false") return false
+  return undefined
+}
+
 export function forgejoEnvironmentDefaultsResolve(
   options: ForgejoEnvironmentDefaultsResolveOptions = {},
 ): ForgejoEnvironmentDefaults {
@@ -38,6 +49,7 @@ export function forgejoEnvironmentDefaultsResolve(
   const organization = forgejoEnvironmentDefaultValue(env, ["FJ_ORG"])
   const remote = forgejoEnvironmentDefaultValue(env, ["FJ_REMOTE"])
   const repository = basename(cwd)
+  const noOrg = forgejoEnvironmentDefaultBooleanValue(env, "FJ_NO_ORG")
 
   return {
     ...(host ? { host } : {}),
@@ -47,6 +59,7 @@ export function forgejoEnvironmentDefaultsResolve(
     ...(organization ? { organization } : {}),
     ...(remote ? { remote } : {}),
     ...(repository ? { repository } : {}),
+    ...(noOrg !== undefined ? { noOrg } : {}),
   }
 }
 

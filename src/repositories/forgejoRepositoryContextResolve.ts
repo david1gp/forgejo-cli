@@ -27,6 +27,7 @@ type ForgejoRepositoryContext = {
   host: ForgejoHost
   repository: ForgejoRepositoryIdentifier
   remote?: ForgejoRemote
+  remoteName?: string
 }
 
 type ForgejoRepositoryContextResolveOptions = {
@@ -133,12 +134,14 @@ async function forgejoExplicitRemoteResolve(
   input: unknown,
   options: ForgejoRepositoryContextResolveOptions,
   execute: ForgejoProcessExecute,
-): Promise<ForgejoResult<ForgejoRemote>> {
+): Promise<ForgejoResult<{ name?: string; remote: ForgejoRemote }>> {
   const parsed = forgejoRemoteParse(input)
-  if (parsed.success) return parsed
+  if (parsed.success) return createResult({ remote: parsed.data })
   if (typeof input !== "string" || !/^[A-Za-z0-9._-]+$/.test(input.trim()))
     return createResultError("forgejoRepositoryContextResolve", "Explicit Git remote is invalid")
-  return forgejoGitRemoteGet(input.trim(), options, execute)
+  const remote = await forgejoGitRemoteGet(input.trim(), options, execute)
+  if (!remote.success) return remote
+  return createResult({ name: input.trim(), remote: remote.data })
 }
 
 export async function forgejoRepositoryContextResolve(
@@ -170,7 +173,7 @@ export async function forgejoRepositoryContextResolve(
     return createResultError(op, "Explicit Git remote could not be resolved")
 
   let selectedRemote: { name?: string; remote: ForgejoRemote } | undefined = explicitRemote?.success
-    ? { remote: explicitRemote.data }
+    ? explicitRemote.data
     : undefined
   const preferredRemoteName = options.remote === undefined ? defaults.data.remote : undefined
   const hostHint = explicitHost?.success
@@ -253,6 +256,7 @@ export async function forgejoRepositoryContextResolve(
       host: baseUrl.data.host,
       repository: forgejoRepositoryWithHost(resolvedRepository, baseUrl.data.host),
       ...(selectedRemote ? { remote: selectedRemote.remote } : {}),
+      ...(selectedRemote?.name ? { remoteName: selectedRemote.name } : {}),
     })
   }
   if (!selectedRemote) return createResultError(op, "A repository could not be resolved from Git")
@@ -261,6 +265,7 @@ export async function forgejoRepositoryContextResolve(
     host: baseUrl.data.host,
     repository: forgejoRepositoryWithHost(selectedRemote.remote.repository, baseUrl.data.host),
     remote: selectedRemote.remote,
+    ...(selectedRemote.name ? { remoteName: selectedRemote.name } : {}),
   })
 }
 

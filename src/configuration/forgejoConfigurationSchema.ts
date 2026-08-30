@@ -2,8 +2,14 @@ import * as a from "valibot"
 import { forgejoHostSchema } from "../hosts/forgejoHostSchema.js"
 import { forgejoApplicationTokenSchema } from "../credentials/forgejoApplicationTokenSchema.js"
 import { forgejoOAuthCredentialSchema } from "../credentials/forgejoOAuthCredentialSchema.js"
+import { forgejoDirectoryAssignmentSchema } from "./forgejoDirectoryAssignmentSchema.js"
+import { isAbsolute } from "node:path"
 
 const forgejoConfigurationDefaultStringSchema = a.pipe(a.string(), a.trim(), a.minLength(1))
+const forgejoConfigurationAbsolutePathSchema = a.pipe(
+  a.string(),
+  a.check((input) => isAbsolute(input), "Forgejo directory assignment paths must be absolute"),
+)
 
 const forgejoConfigurationSchema = a.looseObject({
   hosts: a.record(forgejoHostSchema, a.union([forgejoApplicationTokenSchema, forgejoOAuthCredentialSchema])),
@@ -16,6 +22,7 @@ const forgejoConfigurationSchema = a.looseObject({
   ssh_base: a.optional(forgejoConfigurationDefaultStringSchema),
   default_org: a.optional(forgejoConfigurationDefaultStringSchema),
   default_remote: a.optional(forgejoConfigurationDefaultStringSchema),
+  directory_assignments: a.optional(a.record(forgejoConfigurationAbsolutePathSchema, forgejoDirectoryAssignmentSchema)),
 })
 
 export { forgejoConfigurationSchema }

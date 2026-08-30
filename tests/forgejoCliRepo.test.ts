@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test"
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { createResult, createResultError } from "#result"
@@ -402,6 +402,55 @@ test("uses authenticated personal namespaces when --no-org bypasses organization
       },
       authorization: "token test-token",
     },
+  ])
+})
+
+test("uses a dotenv personal namespace while preserving an explicit CLI organization", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-env-personal-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_org: "persisted-team" }, { path: configurationPath })
+  await writeFile(join(directory, ".env"), "FJ_NO_ORG=true\nFJ_ORG=dotenv-team\nUNRELATED_SECRET=must-not-leak\n")
+  const requests: string[] = []
+  const fetch: ForgejoFetch = async (input) => {
+    requests.push(String(input))
+    return new Response(JSON.stringify({ name: "demo", full_name: "alice/demo" }), { status: 201 })
+  }
+  const previousDirectory = process.cwd()
+  try {
+    const options = {
+      env: { ...env, FORGEJO_CONFIG_FILE: configurationPath },
+      fetch,
+      outputWrite: outputCapture().outputWrite,
+      stdoutIsTty: false,
+    }
+    const personal = await forgejoCliRun(
+      ["--cwd", directory, "--host", "https://forgejo.example.test", "repo", "create", "demo"],
+      options,
+    )
+    const explicit = await forgejoCliRun(
+      [
+        "--cwd",
+        directory,
+        "--host",
+        "https://forgejo.example.test",
+        "repo",
+        "create",
+        "demo",
+        "--organization",
+        "explicit-team",
+      ],
+      options,
+    )
+
+    expect(personal.success).toBe(true)
+    expect(explicit.success).toBe(true)
+  } finally {
+    process.chdir(previousDirectory)
+  }
+  expect(requests).toEqual([
+    "https://forgejo.example.test/api/v1/user/repos",
+    "https://forgejo.example.test/api/v1/orgs/explicit-team/repos",
   ])
 })
 

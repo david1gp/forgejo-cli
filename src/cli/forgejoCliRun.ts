@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto"
+import { resolve } from "node:path"
 import { createResult, createResultError } from "#result"
 import { forgejoAuthWhoami } from "../auth/forgejoAuthWhoami.js"
 import { forgejoOAuthAuthorizationCodePkceCreate } from "../auth/forgejoOAuthAuthorizationCodePkceCreate.js"
@@ -6,12 +7,16 @@ import { forgejoOAuthAuthorizationCodePkceExchange } from "../auth/forgejoOAuthA
 import { forgejoOAuthClientIdResolve } from "../auth/forgejoOAuthClientIdResolve.js"
 import { forgejoOAuthLoopbackReceiverCreate } from "../auth/forgejoOAuthLoopbackReceiverCreate.js"
 import { forgejoClientCreate } from "../client/forgejoClientCreate.js"
-import { forgejoDefaultsResolve } from "../configuration/forgejoDefaultsResolve.js"
+import { forgejoDefaultsResolve, type ForgejoDefaults } from "../configuration/forgejoDefaultsResolve.js"
 import {
   forgejoConfigurationDefaultsUpdate,
   type ForgejoConfigurationDefaultKey,
 } from "../configuration/forgejoConfigurationDefaultsUpdate.js"
 import { forgejoConfigurationPathResolve } from "../configuration/forgejoConfigurationPathResolve.js"
+import {
+  forgejoResolvedConfigurationResolve,
+  type ForgejoResolvedConfiguration,
+} from "../configuration/forgejoResolvedConfigurationResolve.js"
 import { forgejoCredentialsDefaultSshSet } from "../credentials/forgejoCredentialsDefaultSshSet.js"
 import { forgejoCredentialsList } from "../credentials/forgejoCredentialsList.js"
 import { forgejoCredentialsLogout } from "../credentials/forgejoCredentialsLogout.js"
@@ -73,6 +78,15 @@ import { forgejoCliAvatarFileRead } from "./forgejoCliAvatarFileRead.js"
 import type { ForgejoCliRunOptions } from "./forgejoCliRunOptions.js"
 
 type ForgejoCliEnvironment = Record<string, string | undefined>
+
+function forgejoCliOrganizationResolve(
+  explicitOrganization: string | undefined,
+  explicitNoOrg: boolean,
+  defaults: Pick<ForgejoDefaults, "organization" | "noOrg">,
+): string | undefined {
+  if (explicitNoOrg || (explicitOrganization === undefined && defaults.noOrg === true)) return undefined
+  return explicitOrganization ?? defaults.organization
+}
 
 async function forgejoCliCwdApply(cwd: string | undefined) {
   if (cwd === undefined) return createResult(null)
@@ -306,6 +320,7 @@ async function forgejoCliAuthListRun(env: ForgejoCliEnvironment, style: "fancy" 
 type ForgejoCliInvocation = Extract<ReturnType<typeof forgejoCliParse>, { success: true }>["data"]
 
 type ForgejoCliConfigurationInvocation = Extract<ForgejoCliInvocation, { kind: "config-set" | "config-unset" }>
+type ForgejoCliResolvedConfigurationInvocation = Extract<ForgejoCliInvocation, { kind: "config-show" }>
 type ForgejoCliRepositoryInvocation = Extract<ForgejoCliInvocation, { kind: `repo-${string}` }>
 type ForgejoCliRepositoryRunOptions = ForgejoCliRunOptions & { env: ForgejoCliEnvironment }
 
@@ -422,6 +437,85 @@ async function forgejoCliConfigurationRun(
   return forgejoCliActionWrite(action, message, invocation.style, invocation.json, options.outputWrite)
 }
 
+function forgejoCliResolvedConfigurationText(configuration: ForgejoResolvedConfiguration): string {
+  const valueText = (value: { value: string | null; source: string }, personal = false) =>
+    `${personal ? "personal" : (value.value ?? "none")} [${value.source}]`
+  const assignment = configuration.directoryAssignment
+    ? `${configuration.directoryAssignment.path} = ${configuration.directoryAssignment.value ?? "personal"}`
+    : "none"
+  return (
+    [
+      `cwd: ${configuration.cwd}`,
+      `configuration path: ${configuration.configurationPath}`,
+      `.env path: ${configuration.environmentFilePath ?? "none"}`,
+      `directory assignment: ${assignment}`,
+      `host: ${valueText(configuration.defaults.host)}`,
+      `ssh base: ${valueText(configuration.defaults.sshBase)}`,
+      `organization: ${valueText(configuration.defaults.organization, configuration.defaults.organization.personal)}`,
+      `remote: ${valueText(configuration.defaults.remote)}`,
+    ].join("\n") + "\n"
+  )
+}
+
+function forgejoCliResolvedConfigurationValueRedact(value: string | null): string | null {
+  if (value === null) return null
+
+  try {
+    const url = new URL(value)
+    if (url.username.length === 0 && url.password.length === 0) return value
+    url.username = "redacted"
+    if (url.password.length > 0) url.password = "redacted"
+    return url.toString()
+  } catch {
+    const scheme = /^[a-z][a-z\d+.-]*:\/\//i.exec(value)
+    if (!scheme) return value
+    const authorityStart = scheme[0].length
+    const authorityEnd = value.slice(authorityStart).search(/[/?#]/)
+    const authority = value.slice(authorityStart, authorityEnd < 0 ? value.length : authorityStart + authorityEnd)
+    const at = authority.lastIndexOf("@")
+    if (at < 0) return value
+    const userInfo = authority.slice(0, at)
+    const redacted = userInfo.includes(":") ? "redacted:redacted" : "redacted"
+    return `${value.slice(0, authorityStart)}${redacted}@${value.slice(authorityStart + at + 1)}`
+  }
+}
+
+function forgejoCliResolvedConfigurationRedact(
+  configuration: ForgejoResolvedConfiguration,
+): ForgejoResolvedConfiguration {
+  return {
+    ...configuration,
+    defaults: {
+      ...configuration.defaults,
+      host: {
+        ...configuration.defaults.host,
+        value: forgejoCliResolvedConfigurationValueRedact(configuration.defaults.host.value),
+      },
+      sshBase: {
+        ...configuration.defaults.sshBase,
+        value: forgejoCliResolvedConfigurationValueRedact(configuration.defaults.sshBase.value),
+      },
+    },
+  }
+}
+
+async function forgejoCliResolvedConfigurationRun(
+  invocation: ForgejoCliResolvedConfigurationInvocation,
+  env: ForgejoCliEnvironment,
+  options: ForgejoCliRunOptions,
+): Promise<ForgejoResult<null>> {
+  const configuration = await forgejoResolvedConfigurationResolve({
+    cwd: invocation.cwd,
+    env,
+    host: invocation.host,
+    execute: options.execute,
+  })
+  if (!configuration.success) return createResultError("forgejoCliRun", configuration.errorMessage)
+  const safeConfiguration = forgejoCliResolvedConfigurationRedact(configuration.data)
+  if (invocation.json) return forgejoCliJsonWrite(safeConfiguration, options.outputWrite)
+  return forgejoCliOutputWrite(forgejoCliResolvedConfigurationText(safeConfiguration), options.outputWrite)
+}
+
 async function forgejoCliRepositoryContext(
   repository: string | undefined,
   host: string | undefined,
@@ -501,7 +595,7 @@ async function forgejoCliRepositoryRun(
     if (!host.success) return host
     const created = await forgejoRepositoryCreate(host.data.client.transport, {
       name: invocation.name,
-      organization: invocation.noOrg ? undefined : (invocation.organization ?? defaults.data.organization),
+      organization: forgejoCliOrganizationResolve(invocation.organization, invocation.noOrg, defaults.data),
       description: invocation.description,
       private: invocation.private,
       autoInit: false,
@@ -536,7 +630,7 @@ async function forgejoCliRepositoryRun(
     const migrated = await forgejoRepositoryMigrate(host.data.client.transport, {
       cloneAddr: invocation.cloneAddr,
       repoName: invocation.repoName,
-      repoOwner: invocation.noOrg ? undefined : (invocation.repoOwner ?? defaults.data.organization),
+      repoOwner: forgejoCliOrganizationResolve(invocation.repoOwner, invocation.noOrg, defaults.data),
       mirror: invocation.mirror,
       private: invocation.private,
       service: invocation.service,
@@ -576,7 +670,7 @@ async function forgejoCliRepositoryRun(
   if (invocation.kind === "repo-fork") {
     const forked = await forgejoRepositoryFork(transport, repository, {
       name: invocation.name,
-      organization: invocation.noOrg ? undefined : (invocation.organization ?? defaults.data.organization),
+      organization: forgejoCliOrganizationResolve(invocation.organization, invocation.noOrg, defaults.data),
     })
     if (!forked.success) return createResultError("forgejoCliRun", forked.errorMessage)
     return forgejoCliRepositoryWrite(forked.data, style, json, outputWrite)
@@ -1077,6 +1171,7 @@ async function forgejoCliInvocationRun(
     return forgejoCliUseSshRun(invocation.host, invocation.cwd, invocation.useSsh, env, invocation.style)
   if (invocation.kind === "config-set" || invocation.kind === "config-unset")
     return forgejoCliConfigurationRun(invocation, env, options)
+  if (invocation.kind === "config-show") return forgejoCliResolvedConfigurationRun(invocation, env, options)
   if (invocation.kind.startsWith("repo-"))
     return forgejoCliRepositoryRun(invocation as ForgejoCliRepositoryInvocation, { ...options, env })
   if (invocation.kind === "auth-list") return forgejoCliAuthListRun(env, invocation.style)
@@ -1144,10 +1239,12 @@ export async function forgejoCliRun(
   const runOptions = isOptions ? (envOrOptions as ForgejoCliRunOptions) : options
   const parsed = forgejoCliParse(argv, { stdoutIsTty: runOptions.stdoutIsTty ?? Boolean(process.stdout.isTTY) })
   if (!parsed.success) return parsed
-  const invocation = parsed.data
-  const cwd = "cwd" in invocation ? invocation.cwd : undefined
+  const parsedInvocation = parsed.data
+  const requestedCwd = "cwd" in parsedInvocation ? parsedInvocation.cwd : undefined
+  const cwd = requestedCwd === undefined ? undefined : resolve(requestedCwd)
   const changedDirectory = await forgejoCliCwdApply(cwd)
   if (!changedDirectory.success) return changedDirectory
+  const invocation = requestedCwd === undefined ? parsedInvocation : { ...parsedInvocation, cwd }
   const result = await forgejoCliInvocationRun(invocation, env, runOptions)
   if (!result.success) return result
   return createResult(0)
