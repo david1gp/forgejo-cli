@@ -12,6 +12,7 @@ export async function forgejoConfigurationDefaultsLoad(
   if (!loaded.success) return loaded
 
   const defaults: ForgejoConfigurationDefaults = {}
+  if (loaded.data.default_ssh !== undefined) defaults.default_ssh = loaded.data.default_ssh
   if (loaded.data.default_host !== undefined) defaults.default_host = loaded.data.default_host
   if (loaded.data.ssh_base !== undefined) defaults.ssh_base = loaded.data.ssh_base
   if (loaded.data.default_org !== undefined) defaults.default_org = loaded.data.default_org

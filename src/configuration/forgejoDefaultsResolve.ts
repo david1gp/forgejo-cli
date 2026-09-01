@@ -9,6 +9,7 @@ import { forgejoEnvironmentDefaultsLoad } from "./forgejoEnvironmentDefaultsLoad
 import type { ForgejoEnvironmentDefaults } from "./forgejoEnvironmentDefaults.js"
 
 type ForgejoDefaults = ForgejoEnvironmentDefaults & {
+  defaultSsh?: string[]
   defaultHost?: string
   noOrg?: boolean
 }
@@ -50,6 +51,7 @@ export async function forgejoDefaultsResolve(
   } = environmentDefaults.data
   const defaults: ForgejoDefaults = {
     ...environmentValues,
+    ...(persisted.default_ssh !== undefined ? { defaultSsh: persisted.default_ssh } : {}),
     ...(environmentNoOrg !== undefined ? { noOrg: environmentNoOrg } : {}),
     ...(persisted.default_host !== undefined ? { defaultHost: persisted.default_host } : {}),
     ...(environmentDefaults.data.sshBase === undefined && persisted.ssh_base !== undefined

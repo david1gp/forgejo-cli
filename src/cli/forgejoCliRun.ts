@@ -74,6 +74,7 @@ import { forgejoCliUserRun } from "./forgejoCliUserRun.js"
 import { forgejoCliParse } from "./forgejoCliParse.js"
 import { forgejoCliProcessExecute } from "./forgejoCliProcessExecute.js"
 import { forgejoCliSshCommandCreate } from "./forgejoCliSshCommandCreate.js"
+import { forgejoCliSshResolve } from "./forgejoCliSshResolve.js"
 import { forgejoCliAvatarFileRead } from "./forgejoCliAvatarFileRead.js"
 import type { ForgejoCliRunOptions } from "./forgejoCliRunOptions.js"
 
@@ -606,10 +607,15 @@ async function forgejoCliRepositoryRun(
     if (!created.success) return createResultError("forgejoCliRun", created.errorMessage)
     const localRemote = invocation.remote ?? (invocation.push ? "origin" : undefined)
     if (localRemote) {
-      const selectedUrl = invocation.ssh === true ? created.data.ssh_url : created.data.clone_url
+      const useSsh = forgejoCliSshResolve({
+        ssh: invocation.ssh,
+        host: host.data.host.host,
+        defaultSsh: defaults.data.defaultSsh,
+      })
+      const selectedUrl = useSsh ? created.data.ssh_url : created.data.clone_url
       if (typeof selectedUrl !== "string")
         return createResultError("forgejoCliRun", "Forgejo did not return a clone URL")
-      const url = invocation.ssh === true ? forgejoSshUrlApplyBase(selectedUrl, defaults.data.sshBase) : selectedUrl
+      const url = useSsh ? forgejoSshUrlApplyBase(selectedUrl, defaults.data.sshBase) : selectedUrl
       const added = await execute({
         command: "git",
         args: ["remote", "add", localRemote, url],
@@ -694,9 +700,14 @@ async function forgejoCliRepositoryRun(
   if (invocation.kind === "repo-clone") {
     const metadata = await forgejoRepositoryCloneMetadataGet(transport, repository)
     if (!metadata.success) return createResultError("forgejoCliRun", metadata.errorMessage)
-    const selectedUrl = invocation.ssh === true ? metadata.data.sshUrl : metadata.data.cloneUrl
+    const useSsh = forgejoCliSshResolve({
+      ssh: invocation.ssh,
+      host: context.data.context.host,
+      defaultSsh: defaults.data.defaultSsh,
+    })
+    const selectedUrl = useSsh ? metadata.data.sshUrl : metadata.data.cloneUrl
     if (!selectedUrl) return createResultError("forgejoCliRun", "Forgejo did not return the requested clone URL")
-    const url = invocation.ssh === true ? forgejoSshUrlApplyBase(selectedUrl, defaults.data.sshBase) : selectedUrl
+    const url = useSsh ? forgejoSshUrlApplyBase(selectedUrl, defaults.data.sshBase) : selectedUrl
     const cloneName = metadata.data.name ?? repository.name
     const destination = invocation.path ?? `./${cloneName}`
     const args = [
@@ -711,10 +722,9 @@ async function forgejoCliRepositoryRun(
     if (!cloned.success) return createResultError("forgejoCliRun", cloned.errorMessage)
     if (typeof metadata.data.parent === "object" && metadata.data.parent !== null) {
       const parent = metadata.data.parent as Record<string, unknown>
-      const upstreamUrl = invocation.ssh === true ? parent.ssh_url : parent.clone_url
+      const upstreamUrl = useSsh ? parent.ssh_url : parent.clone_url
       if (typeof upstreamUrl === "string") {
-        const remoteUrl =
-          invocation.ssh === true ? forgejoSshUrlApplyBase(upstreamUrl, defaults.data.sshBase) : upstreamUrl
+        const remoteUrl = useSsh ? forgejoSshUrlApplyBase(upstreamUrl, defaults.data.sshBase) : upstreamUrl
         const upstream = await execute({
           command: "git",
           args: ["remote", "add", "upstream", remoteUrl],
@@ -949,9 +959,14 @@ async function forgejoCliWikiRun(
   }
   const metadata = await forgejoWikiCloneMetadataGet(transport, repository)
   if (!metadata.success) return createResultError("forgejoCliRun", metadata.errorMessage)
-  const selectedUrl = invocation.ssh === true ? metadata.data.sshUrl : metadata.data.cloneUrl
+  const useSsh = forgejoCliSshResolve({
+    ssh: invocation.ssh,
+    host: context.data.context.host,
+    defaultSsh: defaults.data.defaultSsh,
+  })
+  const selectedUrl = useSsh ? metadata.data.sshUrl : metadata.data.cloneUrl
   if (!selectedUrl) return createResultError("forgejoCliRun", "Forgejo did not return the requested wiki clone URL")
-  const url = invocation.ssh === true ? forgejoSshUrlApplyBase(selectedUrl, defaults.data.sshBase) : selectedUrl
+  const url = useSsh ? forgejoSshUrlApplyBase(selectedUrl, defaults.data.sshBase) : selectedUrl
   const destination = invocation.path ?? `./${metadata.data.name ?? repository.name}-wiki`
   const execute = options.execute ?? forgejoCliProcessExecute
   const cloned = await execute({

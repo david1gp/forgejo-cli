@@ -40,6 +40,7 @@ import type { ForgejoCliInvocation } from "./forgejoCliParse.js"
 import { forgejoCliTextRead } from "./forgejoCliTextRead.js"
 import type { ForgejoCliRunOptions } from "./forgejoCliRunOptions.js"
 import { forgejoCliSshCommandCreate } from "./forgejoCliSshCommandCreate.js"
+import { forgejoCliSshResolve } from "./forgejoCliSshResolve.js"
 
 type ForgejoCliPullRequestInvocation = Extract<ForgejoCliInvocation, { kind: `pr-${string}` }>
 type ForgejoCliPullRequestRunOptions = ForgejoCliRunOptions & { env: Record<string, string | undefined> }
@@ -497,11 +498,15 @@ export async function forgejoCliPullRequestRun(
     if (!resolvedReference.success) return createResultError("forgejoCliPullRequestRun", resolvedReference.errorMessage)
     const metadata = await forgejoRepositoryCloneMetadataGet(transport, resolvedReference.data.repository)
     if (!metadata.success) return createResultError("forgejoCliPullRequestRun", metadata.errorMessage)
-    const ssh = invocation.ssh ?? false
-    const selectedUrl = ssh ? metadata.data.sshUrl : metadata.data.cloneUrl
-    if (!selectedUrl) return createResultError("forgejoCliPullRequestRun", "Forgejo did not return a clone URL")
     const defaults = await forgejoDefaultsResolve({ env: options.env, cwd: invocation.cwd })
     if (!defaults.success) return createResultError("forgejoCliPullRequestRun", defaults.errorMessage)
+    const ssh = forgejoCliSshResolve({
+      ssh: invocation.ssh,
+      host: reference.data.context.data.context.host,
+      defaultSsh: defaults.data.defaultSsh,
+    })
+    const selectedUrl = ssh ? metadata.data.sshUrl : metadata.data.cloneUrl
+    if (!selectedUrl) return createResultError("forgejoCliPullRequestRun", "Forgejo did not return a clone URL")
     const url = ssh ? forgejoSshUrlApplyBase(selectedUrl, defaults.data.sshBase) : selectedUrl
     const fetchArgs = [
       "fetch",
