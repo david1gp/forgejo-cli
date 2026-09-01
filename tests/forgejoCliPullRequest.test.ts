@@ -212,6 +212,53 @@ test("uses persisted ssh_base for pull request checkout", async () => {
   ])
 })
 
+test("honors persisted SSH default for omitted protocol and explicit HTTPS", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-pr-ssh-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_ssh: ["forgejo.example.test"] }, { path: configurationPath })
+  const commands: string[][] = []
+  const options = {
+    env: { FORGEJO_TOKEN: "test-token", FORGEJO_CONFIG_FILE: configurationPath },
+    fetch: async () =>
+      new Response(
+        JSON.stringify({
+          clone_url: "https://forgejo.example.test/owner/repo.git",
+          ssh_url: "ssh://git@forgejo.example.test/owner/repo.git",
+        }),
+        { status: 200 },
+      ),
+    execute: async (input: { args: readonly string[] }) => {
+      commands.push([...input.args])
+      return createResult("")
+    },
+    outputWrite: () => createResult(null),
+  }
+
+  const configuredDefault = await forgejoCliRun(
+    ["-H", "https://forgejo.example.test", "pr", "checkout", "owner/repo#7"],
+    options,
+  )
+  expect(configuredDefault.success).toBe(true)
+  expect(commands).toEqual([
+    ["status", "--porcelain"],
+    ["fetch", "ssh://git@forgejo.example.test/owner/repo.git", "pull/7/head"],
+    ["checkout", "-B", "pr-owner-7", "FETCH_HEAD"],
+  ])
+
+  commands.length = 0
+  const explicitHttps = await forgejoCliRun(
+    ["-H", "https://forgejo.example.test", "pr", "checkout", "owner/repo#7", "--no-ssh"],
+    options,
+  )
+  expect(explicitHttps.success).toBe(true)
+  expect(commands).toEqual([
+    ["status", "--porcelain"],
+    ["fetch", "https://forgejo.example.test/owner/repo.git", "pull/7/head"],
+    ["checkout", "-B", "pr-owner-7", "FETCH_HEAD"],
+  ])
+})
+
 test("views pull request diffs with injectable editor and output effects", async () => {
   const output: string[] = []
   const warnings: string[] = []

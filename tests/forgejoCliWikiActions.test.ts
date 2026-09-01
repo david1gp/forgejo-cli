@@ -163,6 +163,47 @@ test("uses persisted ssh_base for wiki clones", async () => {
   expect(commands).toEqual([["clone", "ssh://git@persisted.example.test:2222/owner/demo.wiki.git", "/tmp/wiki"]])
 })
 
+test("uses the configured SSH default for wiki clones and honors explicit HTTPS", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-wiki-ssh-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_ssh: ["forgejo.example.test"] }, { path: configurationPath })
+  const commands: string[][] = []
+  const options = {
+    env: { ...env, FORGEJO_CONFIG_FILE: configurationPath },
+    fetch: async () =>
+      new Response(
+        JSON.stringify({
+          full_name: "owner/demo",
+          name: "demo",
+          clone_url: "https://forgejo.example.test/owner/demo.git",
+          ssh_url: "ssh://git@forgejo.example.test/owner/demo.git",
+        }),
+      ),
+    execute: async (input: { args: readonly string[] }) => {
+      commands.push([...input.args])
+      return createResult("")
+    },
+    outputWrite: () => createResult(null),
+  }
+
+  const configuredDefault = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "wiki", "clone", "--repo", "owner/demo", "/tmp/wiki"],
+    options,
+  )
+  const explicitHttps = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "wiki", "clone", "--repo", "owner/demo", "--no-ssh", "/tmp/wiki"],
+    options,
+  )
+
+  expect(configuredDefault.success).toBe(true)
+  expect(explicitHttps.success).toBe(true)
+  expect(commands).toEqual([
+    ["clone", "ssh://git@forgejo.example.test/owner/demo.wiki.git", "/tmp/wiki"],
+    ["clone", "https://forgejo.example.test/owner/demo.wiki.git", "/tmp/wiki"],
+  ])
+})
+
 test("runs Actions tasks, variables, secrets, deletes with confirmation, and dispatch", async () => {
   const requests: { url: string; method: string; body?: unknown }[] = []
   const fetch: ForgejoFetch = async (input, init) => {

@@ -487,6 +487,48 @@ test("uses FJ_SSH_BASE for repository creation remotes", async () => {
   ])
 })
 
+test("uses the configured SSH default for repository creation and honors explicit HTTPS", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-repo-create-ssh-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_ssh: ["forgejo.example.test"] }, { path: configurationPath })
+  const commands: string[][] = []
+  const resultOptions = {
+    env: { ...env, FORGEJO_CONFIG_FILE: configurationPath },
+    fetch: async () =>
+      new Response(
+        JSON.stringify({
+          name: "demo",
+          full_name: "owner/demo",
+          clone_url: "https://forgejo.example.test/owner/demo.git",
+          ssh_url: "ssh://git@forgejo.example.test/owner/demo.git",
+        }),
+        { status: 201 },
+      ),
+    execute: async ({ args }: ForgejoProcessCommand) => {
+      commands.push([...args])
+      return createResult("")
+    },
+    outputWrite: outputCapture().outputWrite,
+  }
+
+  const configuredDefault = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "create", "demo", "--remote", "origin"],
+    resultOptions,
+  )
+  const explicitHttps = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "create", "demo", "--remote", "origin", "--no-ssh"],
+    resultOptions,
+  )
+
+  expect(configuredDefault.success).toBe(true)
+  expect(explicitHttps.success).toBe(true)
+  expect(commands).toEqual([
+    ["remote", "add", "origin", "ssh://git@forgejo.example.test/owner/demo.git"],
+    ["remote", "add", "origin", "https://forgejo.example.test/owner/demo.git"],
+  ])
+})
+
 test("uses persisted ssh_base for repository creation and clone remotes", async () => {
   const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-repo-"))
   temporaryDirectories.push(directory)
@@ -553,7 +595,11 @@ test("resolves SSH clone URLs from FJ_SSH_BASE, persisted ssh_base, then the ser
   const persistedPath = join(directory, "persisted.json")
   const serverPath = join(directory, "server.json")
   await forgejoConfigurationSave(
-    { hosts: {}, ssh_base: "ssh://git@persisted.example.test:2222" },
+    {
+      hosts: {},
+      default_ssh: ["forgejo.example.test"],
+      ssh_base: "ssh://git@persisted.example.test:2222",
+    },
     { path: persistedPath },
   )
   await forgejoConfigurationSave({ hosts: {} }, { path: serverPath })
@@ -607,6 +653,13 @@ test("resolves SSH clone URLs from FJ_SSH_BASE, persisted ssh_base, then the ser
       env: { ...env, FORGEJO_CONFIG_FILE: persistedPath },
     },
   )
+  const configuredDefault = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "clone", "owner/demo"],
+    {
+      ...common,
+      env: { ...env, FORGEJO_CONFIG_FILE: persistedPath },
+    },
+  )
   const server = await forgejoCliRun(
     ["--host", "https://forgejo.example.test", "repo", "clone", "--ssh", "owner/demo"],
     {
@@ -618,13 +671,47 @@ test("resolves SSH clone URLs from FJ_SSH_BASE, persisted ssh_base, then the ser
   expect(explicit.success).toBe(true)
   expect(environment.success).toBe(true)
   expect(persisted.success).toBe(true)
+  expect(configuredDefault.success).toBe(true)
   expect(server.success).toBe(true)
   expect(commands).toEqual([
     ["clone", "https://forgejo.example.test/owner/demo.git", "./demo"],
     ["clone", "ssh://git@environment.example.test:2222/owner/demo.git", "./demo"],
     ["clone", "ssh://git@persisted.example.test:2222/owner/demo.git", "./demo"],
+    ["clone", "ssh://git@persisted.example.test:2222/owner/demo.git", "./demo"],
     ["clone", "ssh://git@server.example.test:2222/owner/demo.git", "./demo"],
   ])
+})
+
+test("lets explicit --ssh override a persisted HTTPS clone default", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "forgejo-cli-ssh-override-"))
+  temporaryDirectories.push(directory)
+  const configurationPath = join(directory, "config.json")
+  await forgejoConfigurationSave({ hosts: {}, default_ssh: ["other.example.test"] }, { path: configurationPath })
+  const commands: string[][] = []
+  const result = await forgejoCliRun(
+    ["--host", "https://forgejo.example.test", "repo", "clone", "--ssh", "owner/demo"],
+    {
+      env: { ...env, FORGEJO_CONFIG_FILE: configurationPath },
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            full_name: "owner/demo",
+            name: "demo",
+            clone_url: "https://forgejo.example.test/owner/demo.git",
+            ssh_url: "ssh://git@forgejo.example.test/owner/demo.git",
+          }),
+          { status: 200 },
+        ),
+      execute: async ({ args }) => {
+        commands.push([...args])
+        return createResult("")
+      },
+      outputWrite: outputCapture().outputWrite,
+    },
+  )
+
+  expect(result.success).toBe(true)
+  expect(commands).toEqual([["clone", "ssh://git@forgejo.example.test/owner/demo.git", "./demo"]])
 })
 
 test("keeps omitted repository targets available for runtime fallback resolution", () => {

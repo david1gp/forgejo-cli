@@ -17,6 +17,7 @@ test("combines persisted defaults with environment overrides without merging hos
   await forgejoConfigurationSave(
     {
       hosts: {},
+      default_ssh: ["forced.example.test"],
       default_host: "persisted.example.test",
       ssh_base: "ssh://git@persisted.example.test",
       default_org: "persisted-team",
@@ -43,6 +44,7 @@ test("combines persisted defaults with environment overrides without merging hos
     success: true,
     data: {
       host: "forced.example.test",
+      defaultSsh: ["forced.example.test"],
       fallbackHost: "fallback.example.test",
       defaultHost: "persisted.example.test",
       sshBase: "ssh://git@environment.example.test",

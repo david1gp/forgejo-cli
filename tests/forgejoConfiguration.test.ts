@@ -62,6 +62,7 @@ test("round-trips persistent defaults without dropping configuration metadata", 
   expect(defaults).toEqual({
     success: true,
     data: {
+      default_ssh: ["git.example.test"],
       default_host: "git.example.test",
       ssh_base: "ssh://git@ssh.example.test:2222",
       default_org: "team",
