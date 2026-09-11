@@ -1,6 +1,10 @@
 import { randomBytes } from "node:crypto"
-import { resolve } from "node:path"
+import { existsSync, realpathSync } from "node:fs"
+import { release as osRelease } from "node:os"
+import { dirname, relative, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 import { createResult, createResultError } from "#result"
+import pkg from "../../package.json" with { type: "json" }
 import { forgejoAuthWhoami } from "../auth/forgejoAuthWhoami.js"
 import { forgejoOAuthAuthorizationCodePkceCreate } from "../auth/forgejoOAuthAuthorizationCodePkceCreate.js"
 import { forgejoOAuthAuthorizationCodePkceExchange } from "../auth/forgejoOAuthAuthorizationCodePkceExchange.js"
@@ -159,13 +163,56 @@ async function forgejoCliWhoamiRun(
   return forgejoCliOutputWrite(output, outputWrite)
 }
 
-async function forgejoCliVersionRun(verbose: boolean, style: "fancy" | "minimal") {
+function forgejoCliExecutableResolve(): { entrypoint: string; target?: string } {
+  const entrypoint = process.argv[1]
+  if (entrypoint === undefined) return { entrypoint: "unavailable" }
+  const resolvedEntrypoint = resolve(entrypoint)
+  try {
+    return { entrypoint: resolvedEntrypoint, target: realpathSync(resolvedEntrypoint) }
+  } catch {
+    return { entrypoint: resolvedEntrypoint }
+  }
+}
+
+function forgejoCliInstallationTypeResolve(executableTarget: string | undefined): string {
+  const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
+  if (existsSync(resolve(packageRoot, ".git"))) return "development checkout"
+  if (executableTarget !== undefined && !relative(packageRoot, executableTarget).startsWith(".."))
+    return "package installation"
+  return "unknown"
+}
+
+function forgejoCliAuthorRender(): string {
+  if (typeof pkg.author === "string") return pkg.author
+  return [pkg.author.name, pkg.author.url].filter(Boolean).join(" — ") || "unavailable"
+}
+
+async function forgejoCliVersionRun(
+  verbose: boolean,
+  style: "fancy" | "minimal",
+  outputWrite?: ForgejoCliRunOptions["outputWrite"],
+) {
   const lines = [`${forgejoCliStylePrefix(style, "◆")}fj v${forgejoCliVersion}`]
   if (verbose) {
+    const executable = forgejoCliExecutableResolve()
+    const requirements = Object.entries(pkg.engines)
+      .map(([runtime, requirement]) => `${runtime} ${requirement}`)
+      .join(", ")
+    const runtime = typeof Bun === "undefined" ? `${process.release.name} ${process.version}` : `bun ${Bun.version}`
     lines.push(`user agent: @adaptive-ds/forgejo-cli/${forgejoCliVersion}`)
-    lines.push(`runtime: ${typeof Bun === "undefined" ? "node" : `bun ${Bun.version}`}`)
+    lines.push(`executable: ${executable.entrypoint}`)
+    lines.push(`executable target: ${executable.target ?? "unavailable"}`)
+    lines.push(`version: ${pkg.version}`)
+    lines.push(`description: ${pkg.description ?? "unavailable"}`)
+    lines.push(`author: ${forgejoCliAuthorRender()}`)
+    lines.push(`license: ${pkg.license ?? "unavailable"}`)
+    lines.push(`project: ${pkg.homepage ?? pkg.repository.url ?? "unavailable"}`)
+    lines.push(`installation type: ${forgejoCliInstallationTypeResolve(executable.target)}`)
+    lines.push(`runtime: ${runtime}`)
+    lines.push(`runtime requirements: ${requirements || "unavailable"}`)
+    lines.push(`platform: ${process.platform} ${process.arch} (OS release ${osRelease()})`)
   }
-  return forgejoCliOutputWrite(`${lines.join("\n")}\n`)
+  return forgejoCliOutputWrite(`${lines.join("\n")}\n`, outputWrite)
 }
 
 async function forgejoCliTokenStoreRun(
@@ -1155,7 +1202,8 @@ async function forgejoCliInvocationRun(
   options: ForgejoCliRunOptions = {},
 ): Promise<ForgejoResult<null>> {
   if (invocation.kind === "help") return forgejoCliOutputWrite(forgejoCliHelpRender(invocation.path))
-  if (invocation.kind === "version") return forgejoCliVersionRun(invocation.verbose, invocation.style)
+  if (invocation.kind === "version")
+    return forgejoCliVersionRun(invocation.verbose, invocation.style, options.outputWrite)
   if (invocation.kind === "whoami")
     return forgejoCliWhoamiRun(
       invocation.host,
