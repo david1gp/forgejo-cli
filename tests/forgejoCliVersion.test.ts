@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { forgejoCliRun, forgejoCliVersion } from "../src/index.js"
 
 test("exposes the package version", () => {
-  expect(forgejoCliVersion).toBe("0.5.0")
+  expect(forgejoCliVersion).toBe("0.5.1")
 })
 
 test("keeps plain version output unchanged", async () => {
@@ -16,7 +16,7 @@ test("keeps plain version output unchanged", async () => {
   })
 
   expect(result).toEqual({ success: true, data: 0 })
-  expect(output.join("")).toBe("fj v0.5.0\n")
+  expect(output.join("")).toBe("fj v0.5.1\n")
 })
 
 test("reports package and environment metadata in verbose output", async () => {
@@ -31,7 +31,7 @@ test("reports package and environment metadata in verbose output", async () => {
 
   expect(result).toEqual({ success: true, data: 0 })
   const rendered = output.join("")
-  expect(rendered).toContain("fj v0.5.0\n")
+  expect(rendered).toContain("fj v0.5.1\n")
   expect(rendered).toContain(
     "description: A Result-based TypeScript Forgejo client library and fj command-line interface.",
   )
