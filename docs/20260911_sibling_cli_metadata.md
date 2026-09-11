@@ -17,4 +17,4 @@ Inventory direct sibling repositories, implement independent repository-scoped c
 2. Add metadata to confirmed sibling CLIs in repository-scoped increments. Status: complete. Scope: assets-optimizer, assets-service, authworks, caddy-projects, codex-imagen, google-search-console-client, lexware-client, minimax, outscraper-client, project-creator, project-registry, ralph, telegram-send, waha-client, zitadel-cli.
 3. Add project-creator recipe step and generation tests. Status: complete.
 4. Independently verify affected repositories and summarize supported commands. Status: complete. MiniMax and project-registry use `--version --verbose`; other main CLIs support `version --verbose`.
-5. Run commits skill separately in every changed repository, including forgejo-cli, preserving unrelated work. Status: sibling repositories complete; forgejo-cli finalization in progress.
+5. Run commits skill separately in every changed repository, including forgejo-cli, preserving unrelated work. Status: complete.
