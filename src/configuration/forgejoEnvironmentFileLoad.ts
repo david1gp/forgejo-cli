@@ -25,7 +25,7 @@ export async function forgejoEnvironmentFileLoad(
       return createResult({ path, values: forgejoEnvironmentFileParse(text) })
     } catch (error) {
       const code = error instanceof Error && "code" in error ? error.code : undefined
-      if (code !== "ENOENT") return createResultError(op, "Unable to read Forgejo .env file")
+      if (code !== "ENOENT" && code !== "EISDIR") return createResultError(op, "Unable to read Forgejo .env file")
     }
     const parent = dirname(directory)
     if (parent === directory) return createResult({ values: {} })

@@ -74,6 +74,19 @@ test("discovers the nearest dotenv file from the effective working directory", a
   expect(resolved).toEqual({ success: true, data: { FJ_ORG: "nearest-team" } })
 })
 
+test("ignores a discovered .env directory and continues to an ancestor dotenv file", async () => {
+  const root = await mkdtemp(join(tmpdir(), "forgejo-cli-env-directory-"))
+  temporaryDirectories.push(root)
+  const parent = join(root, "parent")
+  const cwd = join(parent, "project")
+  await mkdir(join(cwd, ".env"), { recursive: true })
+  await writeFile(join(root, ".env"), "FJ_HOST=root.example.test\n")
+
+  const resolved = await forgejoEnvironmentFileResolve({ cwd })
+
+  expect(resolved).toEqual({ success: true, data: { FJ_HOST: "root.example.test" } })
+})
+
 test("returns no values when no dotenv file exists", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "forgejo-cli-env-empty-"))
   temporaryDirectories.push(cwd)
