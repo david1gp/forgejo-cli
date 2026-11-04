@@ -1,6 +1,6 @@
 {
   "name": "@adaptive-ds/forgejo-cli",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "A Result-based TypeScript Forgejo client library and fo command-line interface.",
   "keywords": [
     "forgejo",
