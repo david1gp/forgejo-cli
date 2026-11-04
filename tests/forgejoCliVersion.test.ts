@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test"
+import pkg from "../package.json" with { type: "json" }
 import { forgejoCliRun, forgejoCliVersion } from "../src/index.js"
 
 test("exposes the package version", () => {
-  expect(forgejoCliVersion).toBe("0.5.1")
+  expect(forgejoCliVersion).toBe(pkg.version)
 })
 
 test("keeps plain version output unchanged", async () => {
@@ -16,7 +17,7 @@ test("keeps plain version output unchanged", async () => {
   })
 
   expect(result).toEqual({ success: true, data: 0 })
-  expect(output.join("")).toBe("fo v0.5.1\n")
+  expect(output.join("")).toBe(`fo v${pkg.version}\n`)
 })
 
 test("reports package and environment metadata in verbose output", async () => {
@@ -31,7 +32,7 @@ test("reports package and environment metadata in verbose output", async () => {
 
   expect(result).toEqual({ success: true, data: 0 })
   const rendered = output.join("")
-  expect(rendered).toContain("fo v0.5.1\n")
+  expect(rendered).toContain(`fo v${pkg.version}\n`)
   expect(rendered).toContain(
     "description: A Result-based TypeScript Forgejo client library and fo command-line interface.",
   )
