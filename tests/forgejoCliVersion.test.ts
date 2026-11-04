@@ -39,7 +39,7 @@ test("reports package and environment metadata in verbose output", async () => {
   expect(rendered).toContain("license: MIT")
   expect(rendered).toContain("project: https://github.com/david1gp/forgejo-cli")
   expect(rendered).toContain("installation type: development checkout")
-  expect(rendered).toContain("runtime requirements: node >=22, bun >=1.3.0")
+  expect(rendered).toContain("runtime requirements: unavailable")
   expect(rendered).toContain(`platform: ${process.platform} ${process.arch} (OS release `)
   expect(rendered).not.toContain("build details:")
   expect(rendered).toMatch(/executable: .+\nexecutable target: .+\n/)

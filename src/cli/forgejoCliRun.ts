@@ -195,7 +195,8 @@ async function forgejoCliVersionRun(
   const lines = [`${forgejoCliStylePrefix(style, "◆")}fo v${forgejoCliVersion}`]
   if (verbose) {
     const executable = forgejoCliExecutableResolve()
-    const requirements = Object.entries(pkg.engines)
+    const engines = (pkg as { engines?: Record<string, string> }).engines ?? {}
+    const requirements = Object.entries(engines)
       .map(([runtime, requirement]) => `${runtime} ${requirement}`)
       .join(", ")
     const runtime = typeof Bun === "undefined" ? `${process.release.name} ${process.version}` : `bun ${Bun.version}`
