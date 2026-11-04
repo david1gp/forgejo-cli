@@ -14,7 +14,7 @@ export async function forgejoCliEditorOpen(
   if (!editor) return createResultError("forgejoCliEditorOpen", "Set EDITOR or VISUAL, or provide the input explicitly")
   let directory: string | undefined
   try {
-    directory = await mkdtemp(join(tmpdir(), "fj-"))
+    directory = await mkdtemp(join(tmpdir(), "fo-"))
     const suffix = extension.startsWith(".") ? extension : `.${extension}`
     const file = join(directory, `view${suffix}`)
     await writeFile(file, initial, "utf8")

@@ -57,7 +57,7 @@ const forgejoCliCommandHierarchy: ForgejoCliCommand = {
   ],
   commands: {
     version: {
-      description: "Print the fj version.",
+      description: "Print the fo version.",
       options: [{ name: "verbose", short: "v", description: "Include build and runtime details." }],
     },
     whoami: {
@@ -1126,7 +1126,7 @@ const forgejoCliCommandHierarchy: ForgejoCliCommand = {
       },
     },
     completion: {
-      description: "Generate shell completion for the actual fj command tree.",
+      description: "Generate shell completion for the actual fo command tree.",
       options: [
         { name: "bin-name", value: "NAME", description: "Command name used by the generated completion script." },
       ],

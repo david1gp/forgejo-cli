@@ -30,8 +30,8 @@ test("parses release assets, optional editor bodies, and repository group option
     success: true,
     data: { kind: "help", path: ["release", "asset", "download"] },
   })
-  expect(forgejoCliCompletionGenerate("bash", "fj")).toContain("release")
-  expect(forgejoCliCompletionGenerate("bash", "fj")).toContain("tag")
+  expect(forgejoCliCompletionGenerate("bash", "fo")).toContain("release")
+  expect(forgejoCliCompletionGenerate("bash", "fo")).toContain("tag")
 })
 
 test("creates a release with injected stdin and filesystem reads", async () => {

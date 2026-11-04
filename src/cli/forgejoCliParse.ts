@@ -751,7 +751,7 @@ function forgejoCliHelpPath(args: readonly string[]): string[] {
 }
 
 function forgejoCliArgumentError(message: string): ForgejoResult<never> {
-  return createResultError("forgejoCliParse", `${message}. Use 'fj --help' for usage.`)
+  return createResultError("forgejoCliParse", `${message}. Use 'fo --help' for usage.`)
 }
 
 function forgejoCliOptionDefinitionFind(definitions: readonly ForgejoCliOptionDefinition[], argument: string) {
@@ -1014,7 +1014,7 @@ export function forgejoCliParse(
     if (parsed.data.positional.length > 1) return forgejoCliArgumentError("completion accepts only one shell")
     if (!["bash", "zsh", "fish", "powershell"].includes(shell.toLowerCase()))
       return forgejoCliArgumentError(`Unsupported completion shell '${shell}'`)
-    const binName = forgejoCliString(parsed.data.values, "bin-name") ?? "fj"
+    const binName = forgejoCliString(parsed.data.values, "bin-name") ?? "fo"
     if (binName.trim().length === 0) return forgejoCliArgumentError("--bin-name must not be empty")
     return createResult({ kind: "completion", shell: shell.toLowerCase(), binName, cwd: globals.data.cwd, style })
   }

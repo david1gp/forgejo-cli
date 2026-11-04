@@ -74,5 +74,5 @@ export function forgejoCliHelpRender(path: readonly string[] = []): string {
 }
 
 function forgejoCliCommandHierarchyName(): string {
-  return "fj"
+  return "fo"
 }

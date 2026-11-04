@@ -70,7 +70,7 @@ test("rejects interactive-only add-token and invalid styles without throwing", (
 
 test("completion output follows the implemented command hierarchy for supported shells", () => {
   for (const shell of ["bash", "zsh", "fish", "powershell"]) {
-    const output = forgejoCliCompletionGenerate(shell, "fj")
+    const output = forgejoCliCompletionGenerate(shell, "fo")
     expect(output).toContain("auth")
     expect(output).toContain("add-token")
     expect(output).toContain("client-id")
@@ -91,7 +91,7 @@ test("help and completion expose repository avatar editing", () => {
   expect(help).toContain("--avatar <FILE>")
   expect(help).toContain("--unset-avatar")
   for (const shell of ["bash", "zsh", "fish", "powershell"]) {
-    const output = forgejoCliCompletionGenerate(shell, "fj")
+    const output = forgejoCliCompletionGenerate(shell, "fo")
     expect(output).toContain("avatar")
     expect(output).toContain("unset-avatar")
   }
@@ -153,7 +153,7 @@ test("renders config help and rejects invalid config arguments with parser error
   ]) {
     const parsed = forgejoCliParse(args)
     expect(parsed.success).toBe(false)
-    if (!parsed.success) expect(parsed.errorMessage).toContain("Use 'fj --help' for usage.")
+    if (!parsed.success) expect(parsed.errorMessage).toContain("Use 'fo --help' for usage.")
   }
 
   const invalidKey = forgejoCliParse(["config", "set", "host", "value"])

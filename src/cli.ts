@@ -5,7 +5,7 @@ import { forgejoCliRun } from "./cli/forgejoCliRun.js"
 const result = await forgejoCliRun(process.argv.slice(2))
 if (!result.success) {
   try {
-    process.stderr.write(`fj: ${result.errorMessage}\n`)
+    process.stderr.write(`fo: ${result.errorMessage}\n`)
   } catch {
     // There is no useful recovery path when stderr itself is unavailable.
   }

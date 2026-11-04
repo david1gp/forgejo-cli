@@ -192,7 +192,7 @@ async function forgejoCliVersionRun(
   style: "fancy" | "minimal",
   outputWrite?: ForgejoCliRunOptions["outputWrite"],
 ) {
-  const lines = [`${forgejoCliStylePrefix(style, "◆")}fj v${forgejoCliVersion}`]
+  const lines = [`${forgejoCliStylePrefix(style, "◆")}fo v${forgejoCliVersion}`]
   if (verbose) {
     const executable = forgejoCliExecutableResolve()
     const requirements = Object.entries(pkg.engines)
