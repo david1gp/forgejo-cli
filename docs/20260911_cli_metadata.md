@@ -1,5 +1,5 @@
 # Goal
-Extend `fj version --verbose` to display CLI/package and environment metadata while keeping `fj version` unchanged.
+Extend `fo version --verbose` to display CLI/package and environment metadata while keeping `fo version` unchanged.
 
 # Decisions
 - Reuse the existing verbose version command and existing dependencies.

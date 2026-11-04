@@ -2,7 +2,7 @@
 
 ## Goal
 
-Allow `fj` commands to use shell-configurable defaults for Forgejo host, SSH base, expected user, organization, Git remote, and the current directory's repository name without repeating CLI options.
+Allow `fo` commands to use shell-configurable defaults for Forgejo host, SSH base, expected user, organization, Git remote, and the current directory's repository name without repeating CLI options.
 
 ## Decisions
 

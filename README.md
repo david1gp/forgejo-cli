@@ -1,6 +1,6 @@
 # @adaptive-ds/forgejo-cli
 
-Result-based TypeScript tooling for Forgejo: an importable client library and the `fj` command-line interface.
+Result-based TypeScript tooling for Forgejo: an importable client library and the `fo` command-line interface.
 
 [![npm](https://img.shields.io/npm/v/%40adaptive-ds%2Fforgejo-cli)](https://www.npmjs.com/package/@adaptive-ds/forgejo-cli)
 [![license](https://img.shields.io/npm/l/%40adaptive-ds%2Fforgejo-cli)](./LICENSE)
@@ -18,12 +18,12 @@ bun add @adaptive-ds/forgejo-cli @adaptive-ds/result valibot
 npm install @adaptive-ds/forgejo-cli @adaptive-ds/result valibot
 ```
 
-The `fj` executable is included:
+The `fo` executable is included:
 
 ```sh
-bunx --package @adaptive-ds/forgejo-cli fj --help
+bunx --package @adaptive-ds/forgejo-cli fo --help
 # or, after installing it in a project:
-npx --package @adaptive-ds/forgejo-cli fj --help
+npx --package @adaptive-ds/forgejo-cli fo --help
 ```
 
 `@adaptive-ds/result` and `valibot` are peer dependencies for library consumers. They will back the fallible,
@@ -32,69 +32,69 @@ validated APIs as the Forgejo contexts are implemented.
 ## CLI foundation
 
 ```sh
-fj --help
-fj version
-fj --host https://forgejo.example.test whoami
-fj --host https://forgejo.example.test auth add-token TOKEN
-fj auth login --token TOKEN
-fj --host https://forgejo.example.test auth login
-fj --host https://forgejo.example.test auth login --client-id YOUR_OAUTH_CLIENT_ID
-fj auth logout https://forgejo.example.test
-fj auth use-ssh false
-fj auth list
-fj issue view owner/repo#1
-fj issue comment --repo owner/repo 1 --body "A comment"
-fj pr search --repo owner/repo --state open
-fj pr create --repo owner/repo --head feature --base main --title "A change" --body-file description.md
-fj pr view owner/repo#1
-fj pr view owner/repo#1 diff
-fj pr view owner/repo#1 diff --patch --editor
-fj pr view owner/repo#1 files --json
-fj pr view owner/repo#1 commits --oneline
-fj pr checkout owner/repo#1 --branch review-1
-fj pr merge owner/repo#1 --method squash --yes
-fj release create v1.0.0 --tag v1.0.0 --body-file notes.md
-fj release asset download v1.0.0 app.zip --output app.zip
-fj tag list --repo owner/repo
-fj wiki contents --repo owner/repo
-fj wiki view Home --repo owner/repo
-fj wiki clone --repo owner/repo --ssh
-fj actions tasks --repo owner/repo
-fj actions variables list --repo owner/repo
-fj actions dispatch build.yml main --repo owner/repo --inputs ENV=staging
-fj repo edit --repo owner/repo --avatar ./avatar.png
-fj repo edit --repo owner/repo --unset-avatar
-fj user search alice
-fj user view alice --json
-fj org list --only-member-of
-fj org team list acme
-fj completion bash
+fo --help
+fo version
+fo --host https://forgejo.example.test whoami
+fo --host https://forgejo.example.test auth add-token TOKEN
+fo auth login --token TOKEN
+fo --host https://forgejo.example.test auth login
+fo --host https://forgejo.example.test auth login --client-id YOUR_OAUTH_CLIENT_ID
+fo auth logout https://forgejo.example.test
+fo auth use-ssh false
+fo auth list
+fo issue view owner/repo#1
+fo issue comment --repo owner/repo 1 --body "A comment"
+fo pr search --repo owner/repo --state open
+fo pr create --repo owner/repo --head feature --base main --title "A change" --body-file description.md
+fo pr view owner/repo#1
+fo pr view owner/repo#1 diff
+fo pr view owner/repo#1 diff --patch --editor
+fo pr view owner/repo#1 files --json
+fo pr view owner/repo#1 commits --oneline
+fo pr checkout owner/repo#1 --branch review-1
+fo pr merge owner/repo#1 --method squash --yes
+fo release create v1.0.0 --tag v1.0.0 --body-file notes.md
+fo release asset download v1.0.0 app.zip --output app.zip
+fo tag list --repo owner/repo
+fo wiki contents --repo owner/repo
+fo wiki view Home --repo owner/repo
+fo wiki clone --repo owner/repo --ssh
+fo actions tasks --repo owner/repo
+fo actions variables list --repo owner/repo
+fo actions dispatch build.yml main --repo owner/repo --inputs ENV=staging
+fo repo edit --repo owner/repo --avatar ./avatar.png
+fo repo edit --repo owner/repo --unset-avatar
+fo user search alice
+fo user view alice --json
+fo org list --only-member-of
+fo org team list acme
+fo completion bash
 ```
 
 `-H`/`--host` and `-C`/`--cwd` are global options. Output automatically uses minimal text when stdout is not a TTY;
 use `--style fancy` or `--style minimal` to select the preferred interactive style.
 
-`fj auth login` opens the host's OAuth authorization page and receives the callback on a temporary loopback URL using
+`fo auth login` opens the host's OAuth authorization page and receives the callback on a temporary loopback URL using
 PKCE. The OAuth client ID is resolved in this order: `--client-id`, `FORGEJO_OAUTH_CLIENT_ID` (also
 `FJ_OAUTH_CLIENT_ID`, `FORGEJO_CLIENT_ID`, or `FJ_CLIENT_ID`), `oauth_client_ids` in the Forgejo config file, and
-the built-in public IDs for supported hosts. Use `fj auth login --token TOKEN` for non-interactive automation;
+the built-in public IDs for supported hosts. Use `fo auth login --token TOKEN` for non-interactive automation;
 tokens are never printed.
 
 ## Persistent defaults
 
-Configure a self-hosted Forgejo instance once; `fj config set` stores these values in the owner-only
+Configure a self-hosted Forgejo instance once; `fo config set` stores these values in the owner-only
 `~/.config/forgejo-cli/config.json` file:
 
 ```sh
-fj config set default-host "git.contentoren.de"
-fj config set ssh-base "ssh://git@ssh.git.contentoren.de:2222"
-fj config set default-org "contentoren"
-fj config set default-remote "origin"
+fo config set default-host "git.contentoren.de"
+fo config set ssh-base "ssh://git@ssh.git.contentoren.de:2222"
+fo config set default-org "contentoren"
+fo config set default-remote "origin"
 ```
 
-Use `fj config unset KEY` to remove any of `default-host`, `ssh-base`, `default-org`, or `default-remote`; for example,
-`fj config unset default-org`. Persisted defaults do not require an `/etc/profile.d` entry. SSH keys for Git transport and
-`fj auth login` (or token authentication) remain separate setup; authenticated identity comes from the Forgejo API
+Use `fo config unset KEY` to remove any of `default-host`, `ssh-base`, `default-org`, or `default-remote`; for example,
+`fo config unset default-org`. Persisted defaults do not require an `/etc/profile.d` entry. SSH keys for Git transport and
+`fo auth login` (or token authentication) remain separate setup; authenticated identity comes from the Forgejo API
 credentials, not from an SSH key or `FJ_USER`.
 
 ## Directory organization assignments
@@ -162,8 +162,8 @@ URL. If no explicit repository or usable Git remote identifies a repository, the
 Inspect the effective values, selected paths, and provenance with:
 
 ```sh
-fj config show --resolved
-fj config show --resolved --json
+fo config show --resolved
+fo config show --resolved --json
 ```
 
 The output identifies `cli`, `environment`, `.env`, `directory`, `persisted`, or `none` as sources. Credentials and
@@ -172,9 +172,9 @@ unrelated `.env` values are never shown.
 `--no-org` bypasses organization defaults for personal repository operations:
 
 ```sh
-fj repo create --no-org my-repo
-fj repo fork --no-org owner/repo
-fj repo migrate --no-org https://github.com/owner/repo.git migrated-repo
+fo repo create --no-org my-repo
+fo repo fork --no-org owner/repo
+fo repo migrate --no-org https://github.com/owner/repo.git migrated-repo
 ```
 
 If no explicit repository or usable Git remote identifies a repository, the CLI falls back to `basename(cwd)` as the
@@ -193,7 +193,7 @@ export FJ_REMOTE="origin"
 
 ## Planned Forgejo workflows
 
-`fj` and the library are being designed for automation against self-hosted Forgejo instances, including:
+`fo` and the library are being designed for automation against self-hosted Forgejo instances, including:
 
 - repository, issue, pull request, release, tag, and wiki workflows;
 - actions, users, organizations, and authentication workflows;
@@ -220,7 +220,7 @@ editor, stdin, filesystem, Git/process, confirmation, and output functions where
 
 ```sh
 bun install
-bun run dev             # run the fj scaffold from source
+bun run dev             # run the fo scaffold from source
 bun run format          # format source, tests, and configuration
 bun run format:check
 bun run type-check

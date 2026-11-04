@@ -11,7 +11,7 @@ Resolve Forgejo organization defaults from the working directory, allow a neares
 - Match the longest ancestor assignment for the effective working directory.
 - Discover the nearest `.env` while walking from the working directory upward and read only Forgejo variables. Support existing variables and add `FJ_NO_ORG=true` for the personal namespace.
 - Precedence is explicit CLI options, Forgejo environment values including the discovered `.env`, nearest directory assignment, then global persisted defaults. Existing Git remote repository resolution remains authoritative for checked-out repositories.
-- Add `fj config show --resolved` and `--json`; report selected paths and per-value provenance while redacting credentials and unrelated `.env` values.
+- Add `fo config show --resolved` and `--json`; report selected paths and per-value provenance while redacting credentials and unrelated `.env` values.
 
 ## Approach
 
@@ -47,14 +47,14 @@ override the same variables from `.env`; unrelated `.env` values are ignored. Pr
 Forgejo environment values, the nearest directory assignment, then persisted global defaults. Existing usable Git
 remote repository resolution remains authoritative for checked-out repositories.
 
-Use `fj config show --resolved` for human-readable effective values and provenance, or
-`fj config show --resolved --json` for machine-readable output. Credentials and unrelated `.env` values are redacted.
+Use `fo config show --resolved` for human-readable effective values and provenance, or
+`fo config show --resolved --json` for machine-readable output. Credentials and unrelated `.env` values are redacted.
 
 ## Tasks
 
 - [x] 1. Add directory-assignment schema, longest-ancestor resolution, personal-namespace representation, and focused tests.
 - [x] 2. Add nearest `.env` discovery and Forgejo-only override parsing, including `FJ_NO_ORG`, precedence, and focused tests.
-- [x] 3. Add `fj config show --resolved [--json]` with source provenance and secret redaction, plus CLI tests.
+- [x] 3. Add `fo config show --resolved [--json]` with source provenance and secret redaction, plus CLI tests.
 - [x] 4. Update user-facing documentation and run the complete verification suite.
 - [x] 5. Harden resolved-output redaction and `.env` parsing.
 - [x] 6. Include authoritative Git-selected values and provenance in resolved output.

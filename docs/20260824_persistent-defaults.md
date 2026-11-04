@@ -8,7 +8,7 @@ Persist host, SSH base, default organization, and preferred remote in `~/.config
 
 - Store optional `default_host`, `ssh_base`, `default_org`, and `default_remote` values in the existing owner-only configuration file.
 - Do not persist a default user; resolve the current account through authenticated Forgejo API behavior and retain `FJ_USER` only as an explicit environment target override.
-- Add `fj config set KEY VALUE` and `fj config unset KEY` for `default-host`, `ssh-base`, `default-org`, and `default-remote`.
+- Add `fo config set KEY VALUE` and `fo config unset KEY` for `default-host`, `ssh-base`, `default-org`, and `default-remote`.
 - Use host precedence: explicit host, `FJ_HOST` and compatible force-host aliases, selected Git remote host, `FJ_FALLBACK_HOST`, persisted default host.
 - Use remote precedence: explicit remote, `FJ_REMOTE`, persisted default remote, existing automatic selection.
 - Use repository precedence: explicit repository, usable Git remote, then owner default plus current-directory basename.
