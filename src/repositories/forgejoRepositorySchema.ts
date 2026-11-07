@@ -35,6 +35,15 @@ const forgejoRepositorySchema = a.looseObject({
   has_releases: a.optional(a.nullable(a.boolean())),
   has_wiki: a.optional(a.nullable(a.boolean())),
   parent: a.optional(a.nullable(a.unknown())),
+  permissions: a.optional(
+    a.nullable(
+      a.looseObject({
+        pull: a.optional(a.nullable(a.boolean())),
+        push: a.optional(a.nullable(a.boolean())),
+        admin: a.optional(a.nullable(a.boolean())),
+      }),
+    ),
+  ),
 })
 
 export { forgejoRepositorySchema }

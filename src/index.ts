@@ -392,6 +392,15 @@ export {
   forgejoRepositoryCloneMetadataSchema,
   type ForgejoRepositoryCloneMetadata,
 } from "./repositories/forgejoRepositoryCloneMetadataSchema.js"
+export {
+  forgejoRepositoryCommitSchema,
+  type ForgejoRepositoryCommit,
+} from "./repositories/commits/forgejoRepositoryCommitSchema.js"
+export { forgejoRepositoryCommitsList } from "./repositories/commits/forgejoRepositoryCommitsList.js"
+export {
+  forgejoRepositoryCommitsListOptionsSchema,
+  type ForgejoRepositoryCommitsListOptions,
+} from "./repositories/commits/forgejoRepositoryCommitsListOptionsSchema.js"
 export { forgejoRepositoryCreate } from "./repositories/forgejoRepositoryCreate.js"
 export {
   forgejoRepositoryCreateOptionsSchema,
@@ -456,6 +465,12 @@ export {
 } from "./repositories/forgejoRepositorySchema.js"
 export { forgejoRepositoryStar } from "./repositories/stars/forgejoRepositoryStar.js"
 export { forgejoRepositoryStarStatusGet } from "./repositories/stars/forgejoRepositoryStarStatusGet.js"
+export { forgejoRepositoryTransferAccept } from "./repositories/forgejoRepositoryTransferAccept.js"
+export { forgejoRepositoryTransferCreate } from "./repositories/forgejoRepositoryTransferCreate.js"
+export {
+  forgejoRepositoryTransferCreateOptionsSchema,
+  type ForgejoRepositoryTransferCreateOptions,
+} from "./repositories/forgejoRepositoryTransferCreateOptionsSchema.js"
 export { forgejoRepositoryUnstar } from "./repositories/stars/forgejoRepositoryUnstar.js"
 export { forgejoRepositoryUnitsEdit } from "./repositories/forgejoRepositoryUnitsEdit.js"
 export {
