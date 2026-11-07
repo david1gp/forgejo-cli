@@ -582,6 +582,26 @@ export {
   forgejoOrganizationTeamSchema,
   type ForgejoOrganizationTeam,
 } from "./organizations/teams/forgejoOrganizationTeamSchema.js"
+export { forgejoAdminUserCreate } from "./users/admin/forgejoAdminUserCreate.js"
+export {
+  forgejoAdminUserCreateOptionsSchema,
+  type ForgejoAdminUserCreateOptions,
+} from "./users/admin/forgejoAdminUserCreateOptionsSchema.js"
+export { forgejoAdminUserEdit } from "./users/admin/forgejoAdminUserEdit.js"
+export {
+  forgejoAdminUserEditOptionsSchema,
+  type ForgejoAdminUserEditOptions,
+} from "./users/admin/forgejoAdminUserEditOptionsSchema.js"
+export { forgejoAdminUserRename } from "./users/admin/forgejoAdminUserRename.js"
+export {
+  forgejoAdminUserRenameOptionsSchema,
+  type ForgejoAdminUserRenameOptions,
+} from "./users/admin/forgejoAdminUserRenameOptionsSchema.js"
+export { forgejoAdminUserSshKeyUpload } from "./users/admin/forgejoAdminUserSshKeyUpload.js"
+export {
+  forgejoAdminUserSshKeyUploadOptionsSchema,
+  type ForgejoAdminUserSshKeyUploadOptions,
+} from "./users/admin/forgejoAdminUserSshKeyUploadOptionsSchema.js"
 export { forgejoUserActivityList } from "./users/activity/forgejoUserActivityList.js"
 export {
   forgejoUserActivityListOptionsSchema,
@@ -646,6 +666,14 @@ export {
   type ForgejoUserSshKeyUploadOptions,
 } from "./users/sshKeys/forgejoUserSshKeyUploadOptionsSchema.js"
 export { forgejoUserSshKeysList } from "./users/sshKeys/forgejoUserSshKeysList.js"
+export { forgejoUserTokenCreate } from "./users/tokens/forgejoUserTokenCreate.js"
+export {
+  forgejoUserTokenCreateOptionsSchema,
+  type ForgejoUserTokenCreateOptions,
+} from "./users/tokens/forgejoUserTokenCreateOptionsSchema.js"
+export { forgejoUserTokenDelete } from "./users/tokens/forgejoUserTokenDelete.js"
+export { forgejoUserTokensList } from "./users/tokens/forgejoUserTokensList.js"
+export { forgejoUserTokenSchema, type ForgejoUserToken } from "./users/tokens/forgejoUserTokenSchema.js"
 export { forgejoUserUnblock } from "./users/social/forgejoUserUnblock.js"
 export { forgejoUserUnfollow } from "./users/social/forgejoUserUnfollow.js"
 export { forgejoWikiCloneMetadataGet } from "./wiki/forgejoWikiCloneMetadataGet.js"
