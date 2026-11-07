@@ -29,7 +29,7 @@ function adminTransportCreate(calls: { path: string; method: string; body?: unkn
       if (url.pathname === "/api/v1/admin/users/tim" && method === "PATCH")
         return new Response(JSON.stringify({ ...user, full_name: "Tim Krohn" }), { status: 200 })
       if (url.pathname === "/api/v1/admin/users/tim/rename" && method === "POST")
-        return new Response(JSON.stringify({ ...user, username: "tim.krohn" }), { status: 200 })
+        return new Response(null, { status: 204 })
       if (url.pathname === "/api/v1/admin/users/tim/keys" && method === "POST")
         return new Response(JSON.stringify(sshKey), { status: 201 })
       if (url.pathname === "/api/v1/users/tim/tokens") {
@@ -87,12 +87,34 @@ test("admin user edit and rename target the admin user paths", async () => {
   })
 
   const renamed = await forgejoAdminUserRename(transport, "tim", { newUsername: "tim.krohn" })
-  expect(renamed.success && renamed.data.username).toBe("tim.krohn")
+  expect(renamed).toEqual({ success: true, data: null })
   expect(calls.find((call) => call.path === "/api/v1/admin/users/tim/rename")).toEqual({
     path: "/api/v1/admin/users/tim/rename",
     method: "POST",
     body: { new_username: "tim.krohn" },
   })
+})
+
+test("admin user rename treats an empty 2xx body as success and surfaces non-2xx as failure", async () => {
+  const emptyOk = forgejoRestTransportCreate({
+    baseUrl: "https://forgejo.example.test",
+    fetch: async () => new Response(null, { status: 200 }),
+  })
+  expect(emptyOk.success).toBe(true)
+  if (!emptyOk.success) return
+  expect(await forgejoAdminUserRename(emptyOk.data, "tim", { newUsername: "tim.krohn" })).toEqual({
+    success: true,
+    data: null,
+  })
+
+  const notFound = forgejoRestTransportCreate({
+    baseUrl: "https://forgejo.example.test",
+    fetch: async () => new Response(JSON.stringify({ message: "user not found" }), { status: 404 }),
+  })
+  expect(notFound.success).toBe(true)
+  if (!notFound.success) return
+  const missing = await forgejoAdminUserRename(notFound.data, "tim", { newUsername: "tim.krohn" })
+  expect(missing.success).toBe(false)
 })
 
 test("admin user SSH key upload posts key and title to the admin keys path", async () => {
